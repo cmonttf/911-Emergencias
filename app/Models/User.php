@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Dominio\Economia\Models\Transaccion;
+use App\Dominio\Infraestructura\Models\Edificio;
+use App\Dominio\Misiones\Models\Mision;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -38,5 +40,21 @@ class User extends Authenticatable
     public function transacciones(): HasMany
     {
         return $this->hasMany(Transaccion::class, 'jugador_id');
+    }
+
+    /**
+     * Edificios construidos por el jugador.
+     */
+    public function edificios(): HasMany
+    {
+        return $this->hasMany(Edificio::class, 'jugador_id');
+    }
+
+    /**
+     * Misiones generadas para el jugador.
+     */
+    public function misiones(): HasMany
+    {
+        return $this->hasMany(Mision::class, 'jugador_id');
     }
 }
