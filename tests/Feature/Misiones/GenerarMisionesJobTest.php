@@ -18,7 +18,7 @@ beforeEach(function () {
 });
 
 test('generates a mission within the configured radius of a players building', function () {
-    config(['juego.radio_generacion_mision_metros' => 3000, 'juego.tope_misiones_simultaneas' => 3]);
+    config(['juego.radio_generacion_mision_metros' => 3000]);
 
     $jugador = User::factory()->create();
     Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
@@ -60,14 +60,37 @@ test('does not generate missions for players without any building', function () 
     expect(Mision::count())->toBe(0);
 });
 
-test('respects the simultaneous mission cap per player', function () {
-    config(['juego.tope_misiones_simultaneas' => 2, 'juego.radio_generacion_mision_metros' => 5000]);
+test('the mission cap equals the players building count plus the configured extra', function () {
+    config(['juego.tope_misiones_extra_por_jugador' => 1, 'juego.radio_generacion_mision_metros' => 5000]);
 
     $jugador = User::factory()->create();
     $edificio = Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
     TipoMision::factory()->create();
     PuntoInteres::factory()->count(5)->create(['latitud' => -36.8271, 'longitud' => -73.0499]);
 
+    // Tope = 2 edificios + 1 extra = 3. Ya tiene 3 misiones activas.
+    Mision::factory()->count(3)->for($jugador, 'jugador')->create([
+        'estado' => EstadoMision::Generada,
+        'latitud' => $edificio->latitud,
+        'longitud' => $edificio->longitud,
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(3);
+});
+
+test('generates a mission when below the cap for the players building count', function () {
+    config(['juego.tope_misiones_extra_por_jugador' => 1, 'juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    TipoMision::factory()->create();
+    PuntoInteres::factory()->count(5)->create(['latitud' => -36.8271, 'longitud' => -73.0499]);
+
+    // Tope = 2 edificios + 1 extra = 3. Solo tiene 2 misiones activas: hay cupo.
     Mision::factory()->count(2)->for($jugador, 'jugador')->create([
         'estado' => EstadoMision::Generada,
         'latitud' => $edificio->latitud,
@@ -76,5 +99,5 @@ test('respects the simultaneous mission cap per player', function () {
 
     (new GenerarMisionesJob)->handle();
 
-    expect(Mision::count())->toBe(2);
+    expect(Mision::count())->toBe(3);
 });

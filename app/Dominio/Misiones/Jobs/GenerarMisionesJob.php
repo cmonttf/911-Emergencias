@@ -32,17 +32,22 @@ class GenerarMisionesJob implements ShouldQueue
     }
 
     /**
+     * Jugadores con al menos un edificio y menos misiones activas que su
+     * tope (RF-21): la cantidad de edificios que tienen, más el extra
+     * configurado en `juego.tope_misiones_extra_por_jugador`.
+     *
      * @return Collection<int, User>
      */
     private function jugadoresConCupoLibre()
     {
         return User::query()
-            ->has('edificios')
+            ->withCount('edificios')
             ->withCount(['misiones as misiones_activas_count' => fn ($consulta) => $consulta->whereIn(
                 'estado',
                 [EstadoMision::Generada, EstadoMision::EnAtencion]
             )])
-            ->having('misiones_activas_count', '<', config('juego.tope_misiones_simultaneas'))
+            ->having('edificios_count', '>', 0)
+            ->havingRaw('misiones_activas_count < edificios_count + ?', [config('juego.tope_misiones_extra_por_jugador')])
             ->get();
     }
 

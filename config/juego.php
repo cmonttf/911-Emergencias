@@ -38,7 +38,15 @@ return [
     |--------------------------------------------------------------------------
     */
     'radio_generacion_mision_metros' => (int) env('JUEGO_RADIO_GENERACION_MISION_METROS', 3000),
-    'tope_misiones_simultaneas' => (int) env('JUEGO_TOPE_MISIONES_SIMULTANEAS', 3),
+
+    /*
+    | Tope de misiones simultáneas por jugador (RF-21): la cantidad de
+    | edificios que tiene, más este número extra. Un jugador con 2 edificios
+    | y el valor por defecto (1) puede tener hasta 3 misiones activas a la
+    | vez. En fases futuras el tope "crece con el rango del jugador" (ERS);
+    | por ahora crece con sus edificios.
+    */
+    'tope_misiones_extra_por_jugador' => (int) env('JUEGO_TOPE_MISIONES_EXTRA_POR_JUGADOR', 1),
 
     /*
     |--------------------------------------------------------------------------
