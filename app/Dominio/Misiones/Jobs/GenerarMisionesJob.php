@@ -53,7 +53,13 @@ class GenerarMisionesJob implements ShouldQueue
 
     private function generarMisionParaJugador(User $jugador): void
     {
-        $tipoMision = TipoMision::query()->inRandomOrder()->first();
+        $tiposMisionDisponibles = TipoMision::query();
+
+        if ($jugador->edificios_count < config('juego.edificios_minimos_mision_especial')) {
+            $tiposMisionDisponibles->sinVehiculosEspeciales();
+        }
+
+        $tipoMision = $tiposMisionDisponibles->inRandomOrder()->first();
         $edificio = $jugador->edificios()->inRandomOrder()->first();
 
         if (! $tipoMision || ! $edificio) {

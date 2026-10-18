@@ -192,10 +192,16 @@ están agrupadas bajo `# --- Central de Emergencias Chile ---`:
   [OpenFreeMap](https://openfreemap.org/), que sí trae calles y edificios a
   cualquier zoom).
 - `JUEGO_CREDITOS_INICIALES`, `JUEGO_RADIO_GENERACION_MISION_METROS`,
-  `JUEGO_TOPE_MISIONES_EXTRA_POR_JUGADOR`, `JUEGO_FACTOR_VELOCIDAD_TIEMPO`:
-  ver `config/juego.php` para el detalle de cada uno. El tope de misiones
-  simultáneas de un jugador es su cantidad de edificios más este extra (por
-  defecto 1): con 2 edificios, hasta 3 misiones activas a la vez.
+  `JUEGO_TOPE_MISIONES_EXTRA_POR_JUGADOR`, `JUEGO_EDIFICIOS_MINIMOS_MISION_ESPECIAL`,
+  `JUEGO_FACTOR_VELOCIDAD_TIEMPO`: ver `config/juego.php` para el detalle de
+  cada uno. El tope de misiones simultáneas de un jugador es su cantidad de
+  edificios más este extra (por defecto 1): con 2 edificios, hasta 3 misiones
+  activas a la vez. Mientras un jugador tenga menos edificios que
+  `JUEGO_EDIFICIOS_MINIMOS_MISION_ESPECIAL` (por defecto 3), solo se le
+  generan misiones que se cubren con el carro de agua básico; desde ese
+  número de edificios hacia arriba también puede recibir misiones que
+  exigen un vehículo de especialidad (rescate, escala, materiales
+  peligrosos o mando, como un carro de mando).
 
 ## Comando de importación de puntos de interés
 

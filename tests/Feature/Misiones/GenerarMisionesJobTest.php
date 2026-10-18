@@ -1,11 +1,14 @@
 <?php
 
+use App\Dominio\Flota\Enums\EspecialidadVehiculo;
+use App\Dominio\Flota\Models\TipoVehiculo;
 use App\Dominio\Geo\Models\PuntoInteres;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Jobs\GenerarMisionesJob;
 use App\Dominio\Misiones\Jobs\VencerMisionJob;
 use App\Dominio\Misiones\Models\Mision;
+use App\Dominio\Misiones\Models\RequisitoTipoMision;
 use App\Dominio\Misiones\Models\TipoMision;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -100,4 +103,46 @@ test('generates a mission when below the cap for the players building count', fu
     (new GenerarMisionesJob)->handle();
 
     expect(Mision::count())->toBe(3);
+});
+
+test('a player with fewer buildings than the minimum only gets missions without special vehicles', function () {
+    config(['juego.edificios_minimos_mision_especial' => 3, 'juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    PuntoInteres::factory()->create(['latitud' => -36.8271, 'longitud' => -73.0499]);
+
+    $tipoAgua = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoAgua, 'tipoMision')->create([
+        'tipo_vehiculo_id' => TipoVehiculo::factory()->create(['especialidad' => EspecialidadVehiculo::Agua]),
+    ]);
+
+    $tipoEspecial = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoEspecial, 'tipoMision')->create([
+        'tipo_vehiculo_id' => TipoVehiculo::factory()->create(['especialidad' => EspecialidadVehiculo::Mando]),
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(1);
+    expect(Mision::first()->tipo_mision_id)->toBe($tipoAgua->id);
+});
+
+test('a player with at least the minimum buildings can get missions with special vehicles', function () {
+    config(['juego.edificios_minimos_mision_especial' => 3, 'juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    Edificio::factory()->count(3)->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    PuntoInteres::factory()->create(['latitud' => -36.8271, 'longitud' => -73.0499]);
+
+    $tipoEspecial = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoEspecial, 'tipoMision')->create([
+        'tipo_vehiculo_id' => TipoVehiculo::factory()->create(['especialidad' => EspecialidadVehiculo::Mando]),
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(1);
+    expect(Mision::first()->tipo_mision_id)->toBe($tipoEspecial->id);
 });

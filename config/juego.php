@@ -49,6 +49,15 @@ return [
     'tope_misiones_extra_por_jugador' => (int) env('JUEGO_TOPE_MISIONES_EXTRA_POR_JUGADOR', 1),
 
     /*
+    | Cantidad mínima de edificios que necesita un jugador para que se le
+    | generen misiones que exigen un vehículo especial (cualquier
+    | especialidad distinta de "agua": rescate, escala, materiales
+    | peligrosos o mando). Con menos edificios que este número, solo se le
+    | generan misiones que se cubren con el carro de agua básico.
+    */
+    'edificios_minimos_mision_especial' => (int) env('JUEGO_EDIFICIOS_MINIMOS_MISION_ESPECIAL', 3),
+
+    /*
     |--------------------------------------------------------------------------
     | Factor de velocidad del tiempo de juego
     |--------------------------------------------------------------------------
