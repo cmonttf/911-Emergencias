@@ -64,9 +64,16 @@ const marcadoresVehiculo = new Map();
 function estiloMapa() {
     const clave = import.meta.env.VITE_MAPTILER_KEY;
 
-    return clave
-        ? `https://api.maptiler.com/maps/streets/style.json?key=${clave}`
-        : 'https://demotiles.maplibre.org/style.json';
+    if (clave) {
+        return `https://api.maptiler.com/maps/streets/style.json?key=${clave}`;
+    }
+
+    // El estilo demo de MapLibre (demotiles.maplibre.org) solo trae
+    // polígonos de países pensados para ver el mundo completo: a un zoom de
+    // ciudad como el de este juego se ve un relleno sólido sin calles ni
+    // nombres. OpenFreeMap sí sirve calles y edificios reales de OSM a
+    // cualquier zoom, es gratuito y no requiere cuenta ni API key.
+    return 'https://tiles.openfreemap.org/styles/liberty';
 }
 
 function dibujarEdificios() {

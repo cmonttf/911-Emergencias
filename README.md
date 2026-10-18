@@ -171,7 +171,9 @@ están agrupadas bajo `# --- Central de Emergencias Chile ---`:
 
 - `OSRM_BASE_URL`, `NOMINATIM_BASE_URL`: URLs de los servicios geoespaciales.
 - `VITE_MAPTILER_KEY`: API key gratuita de MapTiler para el estilo del mapa
-  (opcional; sin ella se usa el estilo demo público de MapLibre).
+  (opcional; sin ella se usa el estilo público y sin API key de
+  [OpenFreeMap](https://openfreemap.org/), que sí trae calles y edificios a
+  cualquier zoom).
 - `JUEGO_CREDITOS_INICIALES`, `JUEGO_RADIO_GENERACION_MISION_METROS`,
   `JUEGO_TOPE_MISIONES_SIMULTANEAS`, `JUEGO_FACTOR_VELOCIDAD_TIEMPO`: ver
   `config/juego.php` para el detalle de cada uno.
