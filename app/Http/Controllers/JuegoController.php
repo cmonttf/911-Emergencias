@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Dominio\Economia\Billetera;
 use App\Dominio\Economia\Enums\Moneda;
+use App\Dominio\Flota\Models\TipoVehiculo;
 use App\Dominio\Infraestructura\Models\TipoEdificio;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,6 +23,7 @@ class JuegoController extends Controller
         return Inertia::render('Juego/Mapa', [
             'edificios' => $jugador->edificios()->with('tipoEdificio', 'vehiculos.tipoVehiculo')->get(),
             'tiposEdificio' => TipoEdificio::query()->get(),
+            'tiposVehiculo' => TipoVehiculo::query()->get(),
             'saldoCreditos' => (new Billetera($jugador))->saldo(Moneda::Creditos),
         ]);
     }

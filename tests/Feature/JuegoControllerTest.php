@@ -1,8 +1,5 @@
 <?php
 
-use App\Dominio\Economia\Actions\RegistrarTransaccionAction;
-use App\Dominio\Economia\Enums\Moneda;
-use App\Dominio\Economia\Enums\MotivoTransaccion;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Infraestructura\Models\TipoEdificio;
 use App\Models\User;
@@ -10,7 +7,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('the map page shows the players buildings and credit balance', function () {
     $jugador = User::factory()->create();
-    (new RegistrarTransaccionAction)->ejecutar($jugador, Moneda::Creditos, 3500, MotivoTransaccion::CreditoInicial);
+    abonarCreditos($jugador, 3500);
     $tipoEdificio = TipoEdificio::factory()->create();
     Edificio::factory()->for($jugador, 'jugador')->for($tipoEdificio, 'tipoEdificio')->create();
 
@@ -21,6 +18,7 @@ test('the map page shows the players buildings and credit balance', function () 
             ->where('saldoCreditos', 3500)
             ->has('edificios', 1)
             ->has('tiposEdificio')
+            ->has('tiposVehiculo')
         );
 });
 

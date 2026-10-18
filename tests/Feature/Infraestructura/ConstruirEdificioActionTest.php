@@ -1,9 +1,7 @@
 <?php
 
-use App\Dominio\Economia\Actions\RegistrarTransaccionAction;
 use App\Dominio\Economia\Billetera;
 use App\Dominio\Economia\Enums\Moneda;
-use App\Dominio\Economia\Enums\MotivoTransaccion;
 use App\Dominio\Economia\Exceptions\SaldoInsuficienteException;
 use App\Dominio\Geo\ValueObjects\PuntoGeografico;
 use App\Dominio\Infraestructura\Actions\ConstruirEdificioAction;
@@ -20,11 +18,6 @@ beforeEach(function () {
         ], 200),
     ]);
 });
-
-function abonarCreditos(User $jugador, int $monto): void
-{
-    (new RegistrarTransaccionAction)->ejecutar($jugador, Moneda::Creditos, $monto, MotivoTransaccion::CreditoInicial);
-}
 
 test('builds the building at the given point and charges its cost', function () {
     $jugador = User::factory()->create();

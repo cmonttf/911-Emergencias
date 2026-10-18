@@ -3,6 +3,7 @@
 use App\Http\Controllers\EdificioController;
 use App\Http\Controllers\JuegoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\VehiculoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/edificios', [EdificioController::class, 'store'])->name('edificios.store');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
 });
 
 require __DIR__.'/auth.php';

@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import CompraVehiculoForm from '@/Components/CompraVehiculoForm.vue';
 import MapaJuego from '@/Components/MapaJuego.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -10,6 +11,10 @@ const props = defineProps({
         required: true,
     },
     tiposEdificio: {
+        type: Array,
+        required: true,
+    },
+    tiposVehiculo: {
         type: Array,
         required: true,
     },
@@ -176,6 +181,8 @@ function construir() {
                             <p class="text-xs text-gray-400">
                                 {{ edificio.vehiculos.length }} vehículo(s)
                             </p>
+
+                            <CompraVehiculoForm :edificio="edificio" :tipos-vehiculo="tiposVehiculo" />
                         </li>
                     </ul>
                 </section>
