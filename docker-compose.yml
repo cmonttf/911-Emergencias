@@ -1,0 +1,133 @@
+name: emergencias
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        volumes:
+            - .:/var/www/html
+        ports:
+            - '${APP_PORT:-8000}:8000'
+        env_file: .env
+        depends_on:
+            - mysql
+            - redis
+
+    horizon:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        command: php artisan horizon
+        volumes:
+            - .:/var/www/html
+        env_file: .env
+        depends_on:
+            - mysql
+            - redis
+
+    reverb:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        command: php artisan reverb:start --host=0.0.0.0
+        volumes:
+            - .:/var/www/html
+        ports:
+            - '${REVERB_PORT:-6001}:6001'
+        env_file: .env
+        depends_on:
+            - mysql
+            - redis
+
+    scheduler:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
+        volumes:
+            - .:/var/www/html
+        env_file: .env
+        depends_on:
+            - mysql
+            - redis
+
+    vite:
+        image: node:22-alpine
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+        command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+        ports:
+            - '5173:5173'
+        profiles: ['dev']
+
+    mysql:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: '${DB_DATABASE:-emergencias}'
+            MYSQL_USER: '${DB_USERNAME:-emergencias}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-secret}'
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-secret}'
+        ports:
+            - '${DB_PORT:-3306}:3306'
+        volumes:
+            - mysql_data:/var/lib/mysql
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    redis:
+        image: redis:7-alpine
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        volumes:
+            - redis_data:/data
+
+    # Descarga el extracto de Geofabrik y prepara los archivos .osrm una sola vez.
+    # Vuelve a correr sin costo si los archivos ya existen en el volumen.
+    osrm-setup:
+        image: osrm/osrm-backend
+        volumes:
+            - osrm_data:/data
+        entrypoint: /bin/sh
+        command: >
+            -c "
+            [ -f /data/biobio-latest.osm.pbf ] || wget -O /data/biobio-latest.osm.pbf https://download.geofabrik.de/south-america/chile/biobio-latest.osm.pbf &&
+            [ -f /data/biobio-latest.osrm ] || osrm-extract -p /opt/car.lua /data/biobio-latest.osm.pbf &&
+            [ -f /data/biobio-latest.osrm.partition ] || osrm-partition /data/biobio-latest.osrm &&
+            osrm-customize /data/biobio-latest.osrm
+            "
+        restart: 'no'
+
+    osrm:
+        image: osrm/osrm-backend
+        command: osrm-routed --algorithm mld /data/biobio-latest.osrm
+        volumes:
+            - osrm_data:/data
+        ports:
+            - '${OSRM_PORT:-5000}:5000'
+        depends_on:
+            osrm-setup:
+                condition: service_completed_successfully
+
+    nominatim:
+        image: mediagis/nominatim:4.5
+        environment:
+            PBF_URL: https://download.geofabrik.de/south-america/chile/biobio-latest.osm.pbf
+            REPLICATION_URL: https://download.geofabrik.de/south-america/chile/biobio-updates/
+            IMPORT_WIKIPEDIA: 'false'
+            FREEZE: 'true'
+        ports:
+            - '${NOMINATIM_PORT:-8080}:8080'
+        volumes:
+            - nominatim_data:/var/lib/postgresql/14/main
+        shm_size: 1g
+
+volumes:
+    mysql_data:
+    redis_data:
+    osrm_data:
+    nominatim_data:
