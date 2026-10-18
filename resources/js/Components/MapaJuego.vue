@@ -1,8 +1,17 @@
 <script setup>
-import { Map as MapaLibre, Marker, NavigationControl, Popup } from 'maplibre-gl';
+import { Map as MapaLibre, Marker, NavigationControl, Popup, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// MapLibre calcula la URL de su Web Worker a partir de su propia ubicación en
+// tiempo de ejecución; cuando Vite empaqueta la librería (en dev, dentro del
+// pre-bundle de dependencias, y en build, dentro del chunk de la página), esa
+// URL relativa deja de apuntar a un archivo real y el mapa nunca carga
+// ("Worker failed to load"). Resolver el worker con `?url` y fijarlo
+// explícitamente funciona igual en ambos modos.
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { fraccionDeTiempo, puntoEnFraccion } from '@/utils/interpolarRuta';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+
+setWorkerUrl(maplibreWorkerUrl);
 
 const props = defineProps({
     centro: {

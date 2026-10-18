@@ -88,6 +88,13 @@ services:
 
     # Descarga el extracto de Geofabrik y prepara los archivos .osrm una sola vez.
     # Vuelve a correr sin costo si los archivos ya existen en el volumen.
+    #
+    # Geofabrik no ofrece un extracto recortado por región para Chile (solo
+    # el país completo); por eso se descarga chile-latest.osm.pbf entero. Si
+    # se quiere acotar a la Región del Biobío para que la importación de
+    # Nominatim sea más rápida, hay que recortarlo antes con `osmium extract
+    # -p biobio.geojson chile-latest.osm.pbf -o biobio-latest.osm.pbf` (osmium
+    # no viene incluido en esta imagen).
     osrm-setup:
         image: osrm/osrm-backend
         volumes:
@@ -95,16 +102,16 @@ services:
         entrypoint: /bin/sh
         command: >
             -c "
-            [ -f /data/biobio-latest.osm.pbf ] || wget -O /data/biobio-latest.osm.pbf https://download.geofabrik.de/south-america/chile/biobio-latest.osm.pbf &&
-            [ -f /data/biobio-latest.osrm ] || osrm-extract -p /opt/car.lua /data/biobio-latest.osm.pbf &&
-            [ -f /data/biobio-latest.osrm.partition ] || osrm-partition /data/biobio-latest.osrm &&
-            osrm-customize /data/biobio-latest.osrm
+            [ -f /data/chile-latest.osm.pbf ] || wget -O /data/chile-latest.osm.pbf https://download.geofabrik.de/south-america/chile-latest.osm.pbf &&
+            [ -f /data/chile-latest.osrm ] || osrm-extract -p /opt/car.lua /data/chile-latest.osm.pbf &&
+            [ -f /data/chile-latest.osrm.partition ] || osrm-partition /data/chile-latest.osrm &&
+            osrm-customize /data/chile-latest.osrm
             "
         restart: 'no'
 
     osrm:
         image: osrm/osrm-backend
-        command: osrm-routed --algorithm mld /data/biobio-latest.osrm
+        command: osrm-routed --algorithm mld /data/chile-latest.osrm
         volumes:
             - osrm_data:/data
         ports:
@@ -116,8 +123,8 @@ services:
     nominatim:
         image: mediagis/nominatim:4.5
         environment:
-            PBF_URL: https://download.geofabrik.de/south-america/chile/biobio-latest.osm.pbf
-            REPLICATION_URL: https://download.geofabrik.de/south-america/chile/biobio-updates/
+            PBF_URL: https://download.geofabrik.de/south-america/chile-latest.osm.pbf
+            REPLICATION_URL: https://download.geofabrik.de/south-america/chile-updates/
             IMPORT_WIKIPEDIA: 'false'
             FREEZE: 'true'
         ports:

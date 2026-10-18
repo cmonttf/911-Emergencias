@@ -130,11 +130,12 @@ simulan (`Http::fake()`, `Queue::fake()`, `Event::fake()`).
 docker compose up -d
 ```
 
-El servicio `osrm-setup` descarga automáticamente el extracto de la Región
-del Biobío desde Geofabrik y corre `osrm-extract`/`osrm-partition`/
+El servicio `osrm-setup` descarga automáticamente el extracto de **Chile
+completo** desde Geofabrik y corre `osrm-extract`/`osrm-partition`/
 `osrm-customize` la primera vez (puede tardar varios minutos). El servicio
 `nominatim` importa el mismo extracto en su propia base de datos interna
-(puede tardar 10-20 minutos la primera vez). Una vez arriba:
+(puede tardar bastante más que con un extracto regional la primera vez, al
+ser el país entero). Una vez arriba:
 
 ```bash
 docker compose exec app php artisan migrate --seed
@@ -143,18 +144,25 @@ docker compose exec app php artisan puntos-interes:importar "Concepción"
 
 ### Preparar manualmente el extracto de OpenStreetMap
 
-Si prefieres no depender del paso automático de `osrm-setup`, puedes
-descargar el extracto a mano desde Geofabrik:
+Geofabrik **no** publica un extracto recortado por región para Chile, solo
+el país completo. Si prefieres no depender del paso automático de
+`osrm-setup`, descárgalo a mano:
 
 ```bash
-curl -o biobio-latest.osm.pbf \
-  https://download.geofabrik.de/south-america/chile/biobio-latest.osm.pbf
+curl -o chile-latest.osm.pbf \
+  https://download.geofabrik.de/south-america/chile-latest.osm.pbf
 ```
 
-Esta fase usa el extracto de la **Región del Biobío**, no todo Chile, para
-que la importación y el ruteo sean rápidos de iterar. Ampliar a otras
-regiones implica repetir este paso con el extracto correspondiente y sumar
-sus comunas a `config('juego.comunas_disponibles')`.
+Esta fase limita la generación de misiones a las comunas de
+`config('juego.comunas_disponibles')` (Región del Biobío) para que el
+*gameplay* se concentre ahí, aunque el extracto cargado en OSRM/Nominatim sea
+el país completo. Si quieres que la importación de Nominatim sea más rápida
+en vez de procesar todo Chile, puedes recortar el archivo tú mismo antes de
+levantar los servicios con [`osmium extract`](https://osmcode.org/osmium-tool/)
+y un polígono o caja delimitadora de la región, y apuntar `PBF_URL`/los
+comandos de `osrm-setup` al archivo recortado. Ampliar las comunas
+disponibles a otras regiones solo implica sumarlas a
+`config('juego.comunas_disponibles')`.
 
 ## Variables de entorno relevantes
 
