@@ -73,7 +73,11 @@ test('excludes a vehicle whose route calculation fails instead of breaking the w
     $vehiculoOk = Vehiculo::factory()->for($edificioOk)->create(['estado' => EstadoVehiculo::Disponible]);
     Vehiculo::factory()->for($edificioFalla)->create(['estado' => EstadoVehiculo::Disponible]);
 
-    $mision = Mision::factory()->for($jugador, 'jugador')->create();
+    // Coordenadas fijas (no las del rango aleatorio de la factory) para que
+    // el destino de la misión nunca pueda coincidir por casualidad con la
+    // longitud distintiva de $edificioFalla usada más abajo para decidir
+    // qué llamada a OSRM debe fallar.
+    $mision = Mision::factory()->for($jugador, 'jugador')->create(['latitud' => -36.9000, 'longitud' => -73.2000]);
 
     Http::fake(function ($request) use ($edificioFalla) {
         if (str_contains($request->url(), (string) $edificioFalla->longitud)) {
