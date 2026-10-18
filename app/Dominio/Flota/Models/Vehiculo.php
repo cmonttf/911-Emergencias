@@ -28,6 +28,7 @@ class Vehiculo extends Model
         'estado',
         'mision_id',
         'ruta_id',
+        'regresa_en',
     ];
 
     /**
@@ -37,6 +38,7 @@ class Vehiculo extends Model
     {
         return [
             'estado' => EstadoVehiculo::class,
+            'regresa_en' => 'datetime',
         ];
     }
 
