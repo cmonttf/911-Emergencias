@@ -38,7 +38,13 @@ const showingNavigationDropdown = ref(false);
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
-                                    Panel
+                                    Mapa
+                                </NavLink>
+                                <NavLink
+                                    :href="route('misiones.index')"
+                                    :active="route().current('misiones.*')"
+                                >
+                                    Misiones
                                 </NavLink>
                             </div>
                         </div>
@@ -145,7 +151,13 @@ const showingNavigationDropdown = ref(false);
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
-                            Panel
+                            Mapa
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('misiones.index')"
+                            :active="route().current('misiones.*')"
+                        >
+                            Misiones
                         </ResponsiveNavLink>
                     </div>
 

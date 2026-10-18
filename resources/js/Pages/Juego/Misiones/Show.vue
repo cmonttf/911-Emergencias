@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
+import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -17,6 +18,20 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+});
+
+function refrescarSiEsEstaMision(payload) {
+    if (payload.misionId === undefined || payload.misionId === props.mision.id) {
+        router.reload({ preserveScroll: true });
+    }
+}
+
+useCanalJugador({
+    'mision.completada': refrescarSiEsEstaMision,
+    'mision.fallida': refrescarSiEsEstaMision,
+    'vehiculo.llego': refrescarSiEsEstaMision,
+    'despacho.creado': refrescarSiEsEstaMision,
+    'despacho.cancelado': refrescarSiEsEstaMision,
 });
 
 const unidadesEnCamino = computed(() =>

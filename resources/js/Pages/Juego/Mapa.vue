@@ -2,7 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CompraVehiculoForm from '@/Components/CompraVehiculoForm.vue';
 import MapaJuego from '@/Components/MapaJuego.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useCanalJugador } from '@/composables/useCanalJugador';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -61,6 +62,16 @@ function construir() {
         },
     });
 }
+
+function refrescarEdificiosYSaldo() {
+    router.reload({ only: ['edificios', 'saldoCreditos'], preserveScroll: true });
+}
+
+useCanalJugador({
+    'vehiculo.llego': refrescarEdificiosYSaldo,
+    'vehiculo.disponible': refrescarEdificiosYSaldo,
+    'mision.completada': refrescarEdificiosYSaldo,
+});
 </script>
 
 <template>

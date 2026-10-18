@@ -3,15 +3,41 @@
 namespace App\Dominio\Misiones\Events;
 
 use App\Dominio\Misiones\Models\Despacho;
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 /**
  * Se publica cuando el jugador cancela el despacho de una unidad en camino
  * (RF-26); la unidad pasa directo a "regresando".
  */
-class DespachoCancelado
+class DespachoCancelado implements ShouldBroadcast
 {
-    use Dispatchable;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(public readonly Despacho $despacho) {}
+
+    public function broadcastOn(): Channel
+    {
+        return new PrivateChannel("jugador.{$this->despacho->mision->jugador_id}");
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'despacho.cancelado';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'despachoId' => $this->despacho->id,
+            'vehiculoId' => $this->despacho->vehiculo_id,
+        ];
+    }
 }

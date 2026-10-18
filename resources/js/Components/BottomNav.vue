@@ -8,7 +8,8 @@ import { Link } from '@inertiajs/vue3';
  * de texto alternativo.
  */
 const items = [
-    { label: 'Panel', routeName: 'dashboard' },
+    { label: 'Mapa', routeName: 'dashboard' },
+    { label: 'Misiones', routeName: 'misiones.index' },
     { label: 'Perfil', routeName: 'profile.edit' },
 ];
 </script>

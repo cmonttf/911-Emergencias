@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
+import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 defineProps({
@@ -17,6 +18,16 @@ defineProps({
 function cambiarOrden(nuevoOrden) {
     router.get(route('misiones.index'), { orden: nuevoOrden }, { preserveState: true });
 }
+
+function refrescarListado() {
+    router.reload({ only: ['misiones'], preserveScroll: true });
+}
+
+useCanalJugador({
+    'mision.generada': refrescarListado,
+    'mision.completada': refrescarListado,
+    'mision.fallida': refrescarListado,
+});
 </script>
 
 <template>
