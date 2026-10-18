@@ -5,6 +5,7 @@ namespace App\Dominio\Geo\Clientes;
 use App\Dominio\Geo\Exceptions\ServicioGeoNoDisponibleException;
 use App\Dominio\Geo\ValueObjects\DireccionGeocodificada;
 use App\Dominio\Geo\ValueObjects\PuntoGeografico;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -14,6 +15,14 @@ use Illuminate\Support\Facades\Http;
  */
 class NominatimClient
 {
+    /**
+     * Identifica la app ante Nominatim. Es obligatorio por su política de
+     * uso cuando se apunta a la instancia pública (nominatim.openstreetmap.org)
+     * en vez de a una autoalojada: sin un User-Agent descriptivo, las
+     * peticiones quedan sujetas a bloqueo.
+     */
+    private const string USER_AGENT = 'CentralDeEmergenciasChile/1.0 (proyecto educativo)';
+
     public function __construct(private readonly string $baseUrl) {}
 
     /**
@@ -24,12 +33,18 @@ class NominatimClient
      */
     public function geocodificarInversa(PuntoGeografico $punto): DireccionGeocodificada
     {
-        $respuesta = Http::baseUrl($this->baseUrl)->get('reverse', [
-            'lat' => $punto->latitud,
-            'lon' => $punto->longitud,
-            'format' => 'jsonv2',
-            'addressdetails' => 1,
-        ]);
+        try {
+            $respuesta = Http::baseUrl($this->baseUrl)->withUserAgent(self::USER_AGENT)->timeout(10)->get('reverse', [
+                'lat' => $punto->latitud,
+                'lon' => $punto->longitud,
+                'format' => 'jsonv2',
+                'addressdetails' => 1,
+            ]);
+        } catch (ConnectionException $excepcion) {
+            throw new ServicioGeoNoDisponibleException(
+                "No se pudo conectar con Nominatim en {$this->baseUrl}.", previous: $excepcion
+            );
+        }
 
         $cuerpo = $respuesta->json();
 
@@ -56,13 +71,19 @@ class NominatimClient
      */
     public function buscarDirecciones(string $consulta, int $limite = 20): array
     {
-        $respuesta = Http::baseUrl($this->baseUrl)->get('search', [
-            'q' => $consulta,
-            'format' => 'jsonv2',
-            'addressdetails' => 1,
-            'countrycodes' => 'cl',
-            'limit' => $limite,
-        ]);
+        try {
+            $respuesta = Http::baseUrl($this->baseUrl)->withUserAgent(self::USER_AGENT)->timeout(10)->get('search', [
+                'q' => $consulta,
+                'format' => 'jsonv2',
+                'addressdetails' => 1,
+                'countrycodes' => 'cl',
+                'limit' => $limite,
+            ]);
+        } catch (ConnectionException $excepcion) {
+            throw new ServicioGeoNoDisponibleException(
+                "No se pudo conectar con Nominatim en {$this->baseUrl}.", previous: $excepcion
+            );
+        }
 
         if (! $respuesta->successful()) {
             throw new ServicioGeoNoDisponibleException(

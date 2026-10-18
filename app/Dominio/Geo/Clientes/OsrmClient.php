@@ -5,6 +5,7 @@ namespace App\Dominio\Geo\Clientes;
 use App\Dominio\Geo\Exceptions\ServicioGeoNoDisponibleException;
 use App\Dominio\Geo\ValueObjects\PuntoGeografico;
 use App\Dominio\Geo\ValueObjects\ResultadoRuta;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Http;
  */
 class OsrmClient
 {
+    /** Identifica la app ante el servidor de demostración público de OSRM. */
+    private const string USER_AGENT = 'CentralDeEmergenciasChile/1.0 (proyecto educativo)';
+
     public function __construct(private readonly string $baseUrl) {}
 
     /**
@@ -30,11 +34,19 @@ class OsrmClient
             $destino->latitud,
         );
 
-        $respuesta = Http::baseUrl($this->baseUrl)
-            ->get("route/v1/driving/{$coordenadas}", [
-                'overview' => 'full',
-                'geometries' => 'geojson',
-            ]);
+        try {
+            $respuesta = Http::baseUrl($this->baseUrl)
+                ->withUserAgent(self::USER_AGENT)
+                ->timeout(10)
+                ->get("route/v1/driving/{$coordenadas}", [
+                    'overview' => 'full',
+                    'geometries' => 'geojson',
+                ]);
+        } catch (ConnectionException $excepcion) {
+            throw new ServicioGeoNoDisponibleException(
+                "No se pudo conectar con OSRM en {$this->baseUrl}.", previous: $excepcion
+            );
+        }
 
         $cuerpo = $respuesta->json();
 

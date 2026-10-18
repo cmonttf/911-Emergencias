@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Dominio\Economia\Exceptions\SaldoInsuficienteException;
+use App\Dominio\Geo\Exceptions\ServicioGeoNoDisponibleException;
 use App\Dominio\Geo\ValueObjects\PuntoGeografico;
 use App\Dominio\Infraestructura\Actions\ConstruirEdificioAction;
 use App\Dominio\Infraestructura\Models\TipoEdificio;
@@ -18,7 +19,7 @@ class EdificioController extends Controller
      * Construye un edificio para el jugador autenticado en el punto del
      * mapa indicado (RF-50).
      *
-     * @throws ValidationException cuando el jugador no tiene créditos suficientes.
+     * @throws ValidationException cuando el jugador no tiene créditos suficientes o el servicio de geocodificación falla.
      */
     public function store(StoreEdificioRequest $request): RedirectResponse
     {
@@ -33,6 +34,10 @@ class EdificioController extends Controller
         } catch (SaldoInsuficienteException) {
             throw ValidationException::withMessages([
                 'tipo_edificio_id' => 'No tienes créditos suficientes para construir este edificio.',
+            ]);
+        } catch (ServicioGeoNoDisponibleException) {
+            throw ValidationException::withMessages([
+                'latitud' => 'No se pudo obtener la dirección de este punto. Intenta de nuevo.',
             ]);
         }
 

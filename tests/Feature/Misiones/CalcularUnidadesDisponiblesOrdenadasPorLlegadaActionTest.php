@@ -64,3 +64,30 @@ test('excludes vehicles belonging to other players', function () {
     expect($resultado)->toHaveCount(1)
         ->and($resultado[0]['vehiculo']->edificio_id)->toBe($edificio->id);
 });
+
+test('excludes a vehicle whose route calculation fails instead of breaking the whole list', function () {
+    $jugador = User::factory()->create();
+    $edificioOk = Edificio::factory()->for($jugador, 'jugador')->create(['longitud' => -73.0498]);
+    $edificioFalla = Edificio::factory()->for($jugador, 'jugador')->create(['longitud' => -73.0600]);
+
+    $vehiculoOk = Vehiculo::factory()->for($edificioOk)->create(['estado' => EstadoVehiculo::Disponible]);
+    Vehiculo::factory()->for($edificioFalla)->create(['estado' => EstadoVehiculo::Disponible]);
+
+    $mision = Mision::factory()->for($jugador, 'jugador')->create();
+
+    Http::fake(function ($request) use ($edificioFalla) {
+        if (str_contains($request->url(), (string) $edificioFalla->longitud)) {
+            return Http::response(null, 503);
+        }
+
+        return Http::response([
+            'code' => 'Ok',
+            'routes' => [['geometry' => ['coordinates' => [[0, 0], [0, 0]]], 'distance' => 100, 'duration' => 100]],
+        ], 200);
+    });
+
+    $resultado = app(CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction::class)->ejecutar($mision);
+
+    expect($resultado)->toHaveCount(1)
+        ->and($resultado[0]['vehiculo']->id)->toBe($vehiculoOk->id);
+});

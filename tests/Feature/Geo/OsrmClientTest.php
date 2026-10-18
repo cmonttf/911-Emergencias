@@ -48,3 +48,14 @@ test('throws when OSRM is unreachable', function () {
         new PuntoGeografico(-36.8250, -73.0450),
     );
 })->throws(ServicioGeoNoDisponibleException::class);
+
+test('throws a domain exception instead of a raw connection exception', function () {
+    Http::fake([
+        '*/route/v1/driving/*' => Http::failedConnection(),
+    ]);
+
+    app(OsrmClient::class)->calcularRuta(
+        new PuntoGeografico(-36.8270, -73.0498),
+        new PuntoGeografico(-36.8250, -73.0450),
+    );
+})->throws(ServicioGeoNoDisponibleException::class);

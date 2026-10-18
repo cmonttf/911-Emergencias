@@ -47,3 +47,9 @@ test('parses a text search response into a list of addresses', function () {
         ->and($resultados[0]->comuna)->toBe('Concepción')
         ->and($resultados[0]->punto->latitud)->toBe(-36.8270);
 });
+
+test('throws a domain exception instead of a raw connection exception', function () {
+    Http::fake(['*/reverse*' => Http::failedConnection()]);
+
+    app(NominatimClient::class)->geocodificarInversa(new PuntoGeografico(-36.8270, -73.0498));
+})->throws(ServicioGeoNoDisponibleException::class);

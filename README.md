@@ -45,8 +45,15 @@ aquí y en `app/Dominio/**` (ver los PHPDoc de cada decisión):
 - **OSRM y Nominatim no están autoalojados en este entorno.** El
   `OsrmClient` y el `NominatimClient` (`app/Dominio/Geo/Clientes/`) apuntan a
   las URLs de `config/juego.php`/`.env`; todas las pruebas automatizadas los
-  simulan con `Http::fake()`. Para desarrollo real, estas URLs deben apuntar
-  a los servicios autoalojados (ver "Entorno con Docker" abajo).
+  simulan con `Http::fake()`. Para poder construir edificios y despachar
+  vehículos de verdad sin Docker, el `.env` de este entorno apunta a los
+  **servidores públicos de demostración** de OSRM
+  (`https://router.project-osrm.org`) y Nominatim
+  (`https://nominatim.openstreetmap.org`) en vez de a `127.0.0.1`. Son solo
+  para uso liviano/pruebas (Nominatim exige como máximo 1 solicitud por
+  segundo y un `User-Agent` identificando la app, ya configurado en
+  `NominatimClient`); para un uso real hay que volver a apuntar estas URLs a
+  los servicios autoalojados (ver "Entorno con Docker" abajo).
 
 Cuando haya Docker disponible, migrar a Postgres+PostGIS es un cambio
 acotado: reemplazar las columnas `latitud`/`longitud` por `geography(Point)`
@@ -73,7 +80,17 @@ php artisan key:generate
 ```
 
 Edita `.env` con los datos de tu MySQL (`DB_HOST`, `DB_DATABASE`,
-`DB_USERNAME`, `DB_PASSWORD`) y crea la base de datos:
+`DB_USERNAME`, `DB_PASSWORD`). Si no vas a levantar OSRM/Nominatim con
+Docker, cambia también `OSRM_BASE_URL` y `NOMINATIM_BASE_URL` a los
+servidores públicos de demostración (ver "Desviaciones del stack" arriba)
+para poder construir edificios y despachar vehículos de verdad:
+
+```bash
+OSRM_BASE_URL=https://router.project-osrm.org
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
+```
+
+Crea la base de datos:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE emergencias;"
