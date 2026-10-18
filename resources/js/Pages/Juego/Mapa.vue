@@ -11,6 +11,14 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    misiones: {
+        type: Array,
+        required: true,
+    },
+    vehiculosEnMovimiento: {
+        type: Array,
+        required: true,
+    },
     tiposEdificio: {
         type: Array,
         required: true,
@@ -63,14 +71,21 @@ function construir() {
     });
 }
 
-function refrescarEdificiosYSaldo() {
-    router.reload({ only: ['edificios', 'saldoCreditos'], preserveScroll: true });
+function refrescarEstadoDelJuego() {
+    router.reload({
+        only: ['edificios', 'misiones', 'vehiculosEnMovimiento', 'saldoCreditos'],
+        preserveScroll: true,
+    });
 }
 
 useCanalJugador({
-    'vehiculo.llego': refrescarEdificiosYSaldo,
-    'vehiculo.disponible': refrescarEdificiosYSaldo,
-    'mision.completada': refrescarEdificiosYSaldo,
+    'mision.generada': refrescarEstadoDelJuego,
+    'mision.completada': refrescarEstadoDelJuego,
+    'mision.fallida': refrescarEstadoDelJuego,
+    'despacho.creado': refrescarEstadoDelJuego,
+    'despacho.cancelado': refrescarEstadoDelJuego,
+    'vehiculo.llego': refrescarEstadoDelJuego,
+    'vehiculo.disponible': refrescarEstadoDelJuego,
 });
 </script>
 
@@ -93,10 +108,29 @@ useCanalJugador({
             <div class="h-[60vh] overflow-hidden rounded-lg border border-gray-200 lg:col-span-2 lg:h-[75vh]">
                 <MapaJuego
                     :edificios="edificios"
+                    :misiones="misiones"
+                    :vehiculos-en-movimiento="vehiculosEnMovimiento"
                     :punto-pendiente="puntoPendiente"
                     editable
                     @click="alHacerClicEnMapa"
                 />
+            </div>
+
+            <div class="mt-4 lg:col-span-2 lg:order-last">
+                <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Referencia de colores del mapa">
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#b91c1c]" aria-hidden="true" /> Edificio
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#f59e0b]" aria-hidden="true" /> Misión generada
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#f97316]" aria-hidden="true" /> Misión en atención
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#0ea5e9]" aria-hidden="true" /> Vehículo en movimiento
+                    </li>
+                </ul>
             </div>
 
             <div class="mt-6 space-y-6 lg:mt-0">

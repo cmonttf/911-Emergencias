@@ -70,6 +70,7 @@ class CancelarDespachoAction
             $vehiculo->update([
                 'estado' => EstadoVehiculo::Regresando,
                 'ruta_id' => $rutaRegreso->id,
+                'sale_en' => $salidaEn,
                 'regresa_en' => $regresaEn,
             ]);
 

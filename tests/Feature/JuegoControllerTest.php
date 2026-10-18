@@ -17,6 +17,8 @@ test('the map page shows the players buildings and credit balance', function () 
             ->component('Juego/Mapa')
             ->where('saldoCreditos', 3500)
             ->has('edificios', 1)
+            ->has('misiones')
+            ->has('vehiculosEnMovimiento')
             ->has('tiposEdificio')
             ->has('tiposVehiculo')
         );

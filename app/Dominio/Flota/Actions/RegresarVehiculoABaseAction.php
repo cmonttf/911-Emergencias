@@ -45,11 +45,13 @@ class RegresarVehiculoABaseAction
                 'duracion_s' => $resultadoRuta->duracionSegundos,
             ]);
 
-            $regresaEn = now()->addSeconds(FactorVelocidadJuego::escalarSegundos($resultadoRuta->duracionSegundos));
+            $saleEn = now();
+            $regresaEn = $saleEn->clone()->addSeconds(FactorVelocidadJuego::escalarSegundos($resultadoRuta->duracionSegundos));
 
             $vehiculo->update([
                 'estado' => EstadoVehiculo::Regresando,
                 'ruta_id' => $ruta->id,
+                'sale_en' => $saleEn,
                 'regresa_en' => $regresaEn,
             ]);
 

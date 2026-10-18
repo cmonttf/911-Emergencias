@@ -34,6 +34,7 @@ class ProcesarRegresoVehiculoJob implements ShouldQueue
                 'estado' => EstadoVehiculo::Disponible,
                 'mision_id' => null,
                 'ruta_id' => null,
+                'sale_en' => null,
                 'regresa_en' => null,
             ]);
 
