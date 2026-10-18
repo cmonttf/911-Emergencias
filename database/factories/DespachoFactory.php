@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DespachoFactory extends Factory
 {
+    protected $model = Despacho::class;
+
     /**
      * Define the model's default state.
      *

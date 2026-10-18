@@ -3,6 +3,8 @@
 namespace App\Dominio\Misiones\Models;
 
 use App\Dominio\Flota\Models\TipoVehiculo;
+use Database\Factories\RequisitoTipoMisionFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,5 +33,14 @@ class RequisitoTipoMision extends Model
     public function tipoVehiculo(): BelongsTo
     {
         return $this->belongsTo(TipoVehiculo::class);
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return RequisitoTipoMisionFactory::new();
     }
 }

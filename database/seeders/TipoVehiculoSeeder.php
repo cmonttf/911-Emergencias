@@ -16,11 +16,11 @@ class TipoVehiculoSeeder extends Seeder
     public function run(): void
     {
         $tiposPorEspecialidad = [
-            EspecialidadVehiculo::Agua->value => ['nombre' => 'Carro Bomba', 'costo' => 5_000],
-            EspecialidadVehiculo::Rescate->value => ['nombre' => 'Carro Rescate', 'costo' => 7_000],
-            EspecialidadVehiculo::Escala->value => ['nombre' => 'Carro Escala', 'costo' => 9_000],
-            EspecialidadVehiculo::MaterialesPeligrosos->value => ['nombre' => 'Carro de Materiales Peligrosos', 'costo' => 8_000],
-            EspecialidadVehiculo::Mando->value => ['nombre' => 'Carro de Mando', 'costo' => 4_000],
+            EspecialidadVehiculo::Agua->value => ['nombre' => 'Carro Bomba', 'costo' => 1_000],
+            EspecialidadVehiculo::Mando->value => ['nombre' => 'Carro de Mando', 'costo' => 800],
+            EspecialidadVehiculo::Rescate->value => ['nombre' => 'Carro Rescate', 'costo' => 1_500],
+            EspecialidadVehiculo::MaterialesPeligrosos->value => ['nombre' => 'Carro de Materiales Peligrosos', 'costo' => 1_800],
+            EspecialidadVehiculo::Escala->value => ['nombre' => 'Carro Escala', 'costo' => 2_000],
         ];
 
         foreach ($tiposPorEspecialidad as $especialidad => $datos) {

@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MisionFactory extends Factory
 {
+    protected $model = Mision::class;
+
     /**
      * Define the model's default state.
      *

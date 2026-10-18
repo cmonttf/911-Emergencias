@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TipoEdificioFactory extends Factory
 {
+    protected $model = TipoEdificio::class;
+
     /**
      * Define the model's default state.
      *
@@ -21,7 +23,7 @@ class TipoEdificioFactory extends Factory
         return [
             'institucion' => Institucion::Bomberos,
             'nombre' => 'Cuartel de Bomberos',
-            'costo' => 10_000,
+            'costo' => 2_000,
             'estacionamientos_base' => 2,
         ];
     }

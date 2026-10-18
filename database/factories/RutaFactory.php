@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class RutaFactory extends Factory
 {
+    protected $model = Ruta::class;
+
     /**
      * Define the model's default state.
      *

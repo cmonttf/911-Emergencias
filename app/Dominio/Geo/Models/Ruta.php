@@ -2,6 +2,8 @@
 
 namespace App\Dominio\Geo\Models;
 
+use Database\Factories\RutaFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,5 +33,14 @@ class Ruta extends Model
         return [
             'geometria' => 'array',
         ];
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return RutaFactory::new();
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Dominio\Geo\Models;
 
 use App\Dominio\Geo\Concerns\TienePuntoGeografico;
+use Database\Factories\PuntoInteresFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,4 +26,13 @@ class PuntoInteres extends Model
         'direccion',
         'comuna',
     ];
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return PuntoInteresFactory::new();
+    }
 }

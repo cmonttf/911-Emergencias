@@ -6,6 +6,8 @@ use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Geo\Models\Ruta;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Misiones\Models\Mision;
+use Database\Factories\VehiculoFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,5 +58,14 @@ class Vehiculo extends Model
     public function ruta(): BelongsTo
     {
         return $this->belongsTo(Ruta::class);
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return VehiculoFactory::new();
     }
 }

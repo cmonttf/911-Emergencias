@@ -6,6 +6,8 @@ use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Geo\Concerns\TienePuntoGeografico;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Models\User;
+use Database\Factories\MisionFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,5 +66,14 @@ class Mision extends Model
     public function vehiculosAsignados(): HasMany
     {
         return $this->hasMany(Vehiculo::class, 'mision_id');
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return MisionFactory::new();
     }
 }

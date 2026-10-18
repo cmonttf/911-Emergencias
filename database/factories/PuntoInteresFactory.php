@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PuntoInteresFactory extends Factory
 {
+    protected $model = PuntoInteres::class;
+
     /**
      * Define the model's default state.
      *

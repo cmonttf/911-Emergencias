@@ -4,6 +4,8 @@ namespace App\Dominio\Flota\Models;
 
 use App\Dominio\Flota\Enums\EspecialidadVehiculo;
 use App\Dominio\Infraestructura\Enums\Institucion;
+use Database\Factories\TipoVehiculoFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,5 +41,14 @@ class TipoVehiculo extends Model
     public function vehiculos(): HasMany
     {
         return $this->hasMany(Vehiculo::class);
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return TipoVehiculoFactory::new();
     }
 }

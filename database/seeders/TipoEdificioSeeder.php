@@ -17,7 +17,7 @@ class TipoEdificioSeeder extends Seeder
     {
         TipoEdificio::query()->updateOrCreate(
             ['institucion' => Institucion::Bomberos, 'nombre' => 'Cuartel de Bomberos'],
-            ['costo' => 10_000, 'estacionamientos_base' => 2],
+            ['costo' => 2_000, 'estacionamientos_base' => 2],
         );
     }
 }

@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class RequisitoTipoMisionFactory extends Factory
 {
+    protected $model = RequisitoTipoMision::class;
+
     /**
      * Define the model's default state.
      *

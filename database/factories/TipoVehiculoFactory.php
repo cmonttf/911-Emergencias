@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TipoVehiculoFactory extends Factory
 {
+    protected $model = TipoVehiculo::class;
+
     /**
      * Define the model's default state.
      *
@@ -23,7 +25,7 @@ class TipoVehiculoFactory extends Factory
             'institucion' => Institucion::Bomberos,
             'nombre' => 'Carro Bomba',
             'especialidad' => EspecialidadVehiculo::Agua,
-            'costo' => 5_000,
+            'costo' => 1_000,
         ];
     }
 }

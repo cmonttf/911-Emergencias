@@ -3,6 +3,8 @@
 namespace App\Dominio\Misiones\Models;
 
 use App\Dominio\Infraestructura\Enums\Institucion;
+use Database\Factories\TipoMisionFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -44,5 +46,14 @@ class TipoMision extends Model
     public function misiones(): HasMany
     {
         return $this->hasMany(Mision::class);
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return TipoMisionFactory::new();
     }
 }

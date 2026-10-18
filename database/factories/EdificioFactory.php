@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class EdificioFactory extends Factory
 {
+    protected $model = Edificio::class;
+
     /**
      * Define the model's default state.
      *

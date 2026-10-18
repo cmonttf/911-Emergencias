@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TipoMisionFactory extends Factory
 {
+    protected $model = TipoMision::class;
+
     /**
      * Define the model's default state.
      *

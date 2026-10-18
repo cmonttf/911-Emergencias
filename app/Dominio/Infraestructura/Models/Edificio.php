@@ -5,6 +5,8 @@ namespace App\Dominio\Infraestructura\Models;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Geo\Concerns\TienePuntoGeografico;
 use App\Models\User;
+use Database\Factories\EdificioFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,5 +53,14 @@ class Edificio extends Model
     public function vehiculosComprados(): int
     {
         return $this->vehiculos()->count();
+    }
+
+    /**
+     * Los modelos de dominio viven fuera de `App\Models`, así que la
+     * resolución automática de factories de Laravel no los encuentra.
+     */
+    protected static function newFactory(): Factory
+    {
+        return EdificioFactory::new();
     }
 }
