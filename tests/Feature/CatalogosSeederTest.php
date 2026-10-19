@@ -8,11 +8,21 @@ use Database\Seeders\TipoMisionSeeder;
 use Database\Seeders\TipoVehiculoSeeder;
 
 beforeEach(function () {
-    $this->seed([TipoEdificioSeeder::class, TipoVehiculoSeeder::class, TipoMisionSeeder::class]);
+    // Mismo orden que DatabaseSeeder: TipoVehiculoSeeder primero, porque
+    // TipoEdificioSeeder necesita el carro de agua para el vehículo
+    // inicial gratis del cuartel.
+    $this->seed([TipoVehiculoSeeder::class, TipoEdificioSeeder::class, TipoMisionSeeder::class]);
 });
 
 test('seeds exactly one building type for Fase 1', function () {
     expect(TipoEdificio::count())->toBe(1);
+});
+
+test('seeds the barracks with a free default water truck type', function () {
+    $tipoEdificio = TipoEdificio::first();
+    $carroDeAgua = TipoVehiculo::where('especialidad', 'agua')->first();
+
+    expect($tipoEdificio->tipo_vehiculo_inicial_id)->toBe($carroDeAgua->id);
 });
 
 test('seeds the five Bomberos vehicle specialties', function () {
@@ -28,7 +38,7 @@ test('seeds at least six realistic Bomberos mission types with requirements', fu
 });
 
 test('seeding twice does not duplicate catalog rows', function () {
-    $this->seed([TipoEdificioSeeder::class, TipoVehiculoSeeder::class, TipoMisionSeeder::class]);
+    $this->seed([TipoVehiculoSeeder::class, TipoEdificioSeeder::class, TipoMisionSeeder::class]);
 
     expect(TipoEdificio::count())->toBe(1)
         ->and(TipoVehiculo::count())->toBe(5)

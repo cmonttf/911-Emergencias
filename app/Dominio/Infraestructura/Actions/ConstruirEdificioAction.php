@@ -6,6 +6,8 @@ use App\Dominio\Economia\Actions\RegistrarTransaccionAction;
 use App\Dominio\Economia\Enums\Moneda;
 use App\Dominio\Economia\Enums\MotivoTransaccion;
 use App\Dominio\Economia\Exceptions\SaldoInsuficienteException;
+use App\Dominio\Flota\Enums\EstadoVehiculo;
+use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Geo\Clientes\NominatimClient;
 use App\Dominio\Geo\Exceptions\ServicioGeoNoDisponibleException;
 use App\Dominio\Geo\ValueObjects\PuntoGeografico;
@@ -17,7 +19,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Construye un edificio para un jugador en un punto del mapa (RF-50): resuelve
  * la dirección real del punto con Nominatim y cobra el costo del tipo de
- * edificio desde el libro de transacciones.
+ * edificio desde el libro de transacciones. Si el tipo de edificio trae un
+ * vehículo inicial (p. ej. el carro de agua del Cuartel de Bomberos), lo
+ * crea gratis junto con el edificio, sin ningún cargo adicional.
  */
 class ConstruirEdificioAction
 {
@@ -51,6 +55,14 @@ class ConstruirEdificioAction
                 motivo: MotivoTransaccion::ConstruccionEdificio,
                 referencia: $edificio,
             );
+
+            if ($tipoEdificio->tipo_vehiculo_inicial_id) {
+                Vehiculo::query()->create([
+                    'edificio_id' => $edificio->id,
+                    'tipo_vehiculo_id' => $tipoEdificio->tipo_vehiculo_inicial_id,
+                    'estado' => EstadoVehiculo::Disponible,
+                ]);
+            }
 
             return $edificio;
         });

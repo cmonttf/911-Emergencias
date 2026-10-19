@@ -16,8 +16,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            TipoEdificioSeeder::class,
+            // TipoVehiculoSeeder va primero: tanto TipoEdificioSeeder (el
+            // vehículo inicial gratis) como TipoMisionSeeder (los requisitos)
+            // necesitan que los tipos de vehículo ya existan.
             TipoVehiculoSeeder::class,
+            TipoEdificioSeeder::class,
             TipoMisionSeeder::class,
         ]);
 

@@ -2,11 +2,13 @@
 
 namespace App\Dominio\Infraestructura\Models;
 
+use App\Dominio\Flota\Models\TipoVehiculo;
 use App\Dominio\Infraestructura\Enums\Institucion;
 use Database\Factories\TipoEdificioFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -24,6 +26,7 @@ class TipoEdificio extends Model
         'nombre',
         'costo',
         'estacionamientos_base',
+        'tipo_vehiculo_inicial_id',
     ];
 
     /**
@@ -39,6 +42,16 @@ class TipoEdificio extends Model
     public function edificios(): HasMany
     {
         return $this->hasMany(Edificio::class);
+    }
+
+    /**
+     * Tipo de vehículo que trae gratis un edificio nuevo de este tipo (p. ej.
+     * un carro de agua básico para el Cuartel de Bomberos). Null si este
+     * tipo de edificio no trae ninguno al construirse.
+     */
+    public function tipoVehiculoInicial(): BelongsTo
+    {
+        return $this->belongsTo(TipoVehiculo::class, 'tipo_vehiculo_inicial_id');
     }
 
     /**
