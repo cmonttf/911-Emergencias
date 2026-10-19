@@ -3,10 +3,13 @@
 namespace App\Dominio\Flota\Models;
 
 use App\Dominio\Flota\Enums\EstadoVehiculo;
+use App\Dominio\Geo\InterpoladorRuta;
 use App\Dominio\Geo\Models\Ruta;
+use App\Dominio\Geo\ValueObjects\PuntoGeografico;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Misiones\Models\Despacho;
 use App\Dominio\Misiones\Models\Mision;
+use Carbon\Carbon;
 use Database\Factories\VehiculoFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -106,6 +109,47 @@ class Vehiculo extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Fracción recorrida del tramo de movimiento actual (RNF-02):
+     * `f = (ahora - salida) / (llegada - salida)`. 0 si no se está
+     * moviendo (nunca se usa en ese caso, ver `posicionActual()`).
+     */
+    public function fraccionRecorrida(): float
+    {
+        $tramo = $this->tramoDeMovimiento();
+
+        if (! $tramo) {
+            return 0.0;
+        }
+
+        $salida = Carbon::parse($tramo['salidaEn']);
+        $duracionTotal = $salida->diffInSeconds(Carbon::parse($tramo['llegadaEn']));
+
+        if ($duracionTotal <= 0) {
+            return 1.0;
+        }
+
+        return min(1.0, max(0.0, $salida->diffInSeconds(now()) / $duracionTotal));
+    }
+
+    /**
+     * Dónde está el vehículo ahora mismo: interpolado sobre su tramo de
+     * movimiento si va en camino o regresando (la misma fórmula que usa el
+     * cliente para dibujarlo, RNF-02), o su propio cuartel si está
+     * disponible. Se usa para recalcular una ruta nueva desde ahí, nunca
+     * para transmitir posiciones intermedias.
+     */
+    public function posicionActual(): PuntoGeografico
+    {
+        $tramo = $this->tramoDeMovimiento();
+
+        if (! $tramo) {
+            return $this->edificio->puntoGeografico();
+        }
+
+        return InterpoladorRuta::puntoEnFraccion($tramo['geometria'], $this->fraccionRecorrida());
     }
 
     /**

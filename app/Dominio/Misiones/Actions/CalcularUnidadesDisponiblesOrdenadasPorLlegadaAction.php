@@ -12,10 +12,17 @@ use Illuminate\Support\Facades\Log;
 /**
  * Calcula, para una misión, las unidades disponibles del jugador ordenadas
  * por tiempo estimado de llegada (RF-24), consultando a OSRM la duración
- * real del viaje desde cada edificio hasta la misión.
+ * real del viaje desde la posición actual de cada una hasta la misión.
+ *
+ * Una unidad "regresando" a su cuartel cuenta como disponible: todavía no
+ * llegó, así que puede redirigirse a una misión nueva desde donde esté en
+ * ese momento en vez de esperar a que llegue para recién despacharla de
+ * nuevo (DespacharUnidadesAMisionAction).
  */
 class CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction
 {
+    private const array ESTADOS_DESPACHABLES = [EstadoVehiculo::Disponible, EstadoVehiculo::Regresando];
+
     public function __construct(private readonly OsrmClient $osrm) {}
 
     /**
@@ -30,14 +37,14 @@ class CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction
     {
         $vehiculosDisponibles = Vehiculo::query()
             ->whereHas('edificio', fn ($consulta) => $consulta->where('jugador_id', $mision->jugador_id))
-            ->where('estado', EstadoVehiculo::Disponible)
-            ->with(['edificio', 'tipoVehiculo'])
+            ->whereIn('estado', self::ESTADOS_DESPACHABLES)
+            ->with(['edificio', 'tipoVehiculo', 'ruta'])
             ->get();
 
         return $vehiculosDisponibles
             ->map(function (Vehiculo $vehiculo) use ($mision) {
                 try {
-                    $resultadoRuta = $this->osrm->calcularRuta($vehiculo->edificio->puntoGeografico(), $mision->puntoGeografico());
+                    $resultadoRuta = $this->osrm->calcularRuta($vehiculo->posicionActual(), $mision->puntoGeografico());
                 } catch (ServicioGeoNoDisponibleException $excepcion) {
                     Log::warning("No se pudo calcular la ruta del vehículo {$vehiculo->id} hacia la misión {$mision->id}: {$excepcion->getMessage()}");
 

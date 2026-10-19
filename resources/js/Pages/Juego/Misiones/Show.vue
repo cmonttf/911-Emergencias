@@ -157,6 +157,9 @@ function formatearDuracion(segundos) {
                     >
                         <span>
                             {{ unidad.vehiculo.tipo_vehiculo.nombre }}
+                            <span v-if="unidad.vehiculo.estado === 'regresando'" class="text-gray-400">
+                                (regresando a su cuartel, se redirige desde donde está)
+                            </span>
                             <span class="text-gray-400">· llega en {{ formatearDuracion(unidad.duracionSegundos) }}</span>
                         </span>
                         <button

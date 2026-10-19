@@ -8,7 +8,6 @@ use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Geo\Clientes\OsrmClient;
 use App\Dominio\Geo\Exceptions\ServicioGeoNoDisponibleException;
-use App\Dominio\Geo\InterpoladorRuta;
 use App\Dominio\Geo\Models\Ruta;
 use App\Dominio\Misiones\Events\DespachoCancelado;
 use App\Dominio\Misiones\Models\Despacho;
@@ -30,7 +29,7 @@ class CancelarDespachoAction
      */
     public function ejecutar(Despacho $despacho): void
     {
-        $despacho = $despacho->fresh(['ruta']);
+        $despacho = $despacho->fresh();
         $vehiculo = $despacho->vehiculo;
 
         if ($vehiculo->estado !== EstadoVehiculo::EnRuta || $despacho->cancelado_en !== null) {
@@ -41,8 +40,7 @@ class CancelarDespachoAction
 
         // La llamada a OSRM se hace antes de tomar cualquier bloqueo de fila,
         // para no mantener un lock mientras se espera una respuesta de red.
-        $puntoActual = InterpoladorRuta::puntoEnFraccion($despacho->ruta->geometria, $this->fraccionRecorrida($despacho));
-        $resultadoRuta = $this->osrm->calcularRuta($puntoActual, $vehiculo->edificio->puntoGeografico());
+        $resultadoRuta = $this->osrm->calcularRuta($vehiculo->posicionActual(), $vehiculo->edificio->puntoGeografico());
 
         DB::transaction(function () use ($despacho, $resultadoRuta) {
             $vehiculo = Vehiculo::query()->whereKey($despacho->vehiculo_id)->lockForUpdate()->first();
@@ -78,22 +76,5 @@ class CancelarDespachoAction
 
             ProcesarRegresoVehiculoJob::dispatch($vehiculo->id)->delay($regresaEn);
         });
-    }
-
-    /**
-     * Qué tan avanzado va el vehículo en su ruta original, usando la misma
-     * fórmula de interpolación que el cliente (RNF-02).
-     */
-    private function fraccionRecorrida(Despacho $despacho): float
-    {
-        $duracionTotal = $despacho->salida_en->diffInSeconds($despacho->llegada_en);
-
-        if ($duracionTotal <= 0) {
-            return 1.0;
-        }
-
-        $transcurrido = $despacho->salida_en->diffInSeconds(now());
-
-        return min(1.0, max(0.0, $transcurrido / $duracionTotal));
     }
 }

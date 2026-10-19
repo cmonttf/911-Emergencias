@@ -2,10 +2,12 @@
 
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Models\Vehiculo;
+use App\Dominio\Geo\Models\Ruta;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Misiones\Actions\CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction;
 use App\Dominio\Misiones\Models\Mision;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 test('sorts available vehicles of the player by estimated arrival time', function () {
@@ -36,6 +38,37 @@ test('sorts available vehicles of the player by estimated arrival time', functio
         ->and($resultado[0]['duracionSegundos'])->toBe(90)
         ->and($resultado[1]['vehiculo']->id)->toBe($vehiculoLejano->id)
         ->and($resultado[1]['duracionSegundos'])->toBe(900);
+});
+
+test('includes a returning vehicle, routed from its current position instead of its building', function () {
+    Carbon::setTestNow('2026-01-01 10:05:00');
+
+    $jugador = User::factory()->create();
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.83, 'longitud' => -73.05]);
+    $rutaDeRegreso = Ruta::factory()->create(['geometria' => [[-73.05, -36.83], [-73.03, -36.81]]]);
+    $vehiculo = Vehiculo::factory()->for($edificio)->create([
+        'estado' => EstadoVehiculo::Regresando,
+        'ruta_id' => $rutaDeRegreso->id,
+        'sale_en' => '2026-01-01 10:00:00',
+        'regresa_en' => '2026-01-01 10:10:00',
+    ]);
+
+    $mision = Mision::factory()->for($jugador, 'jugador')->create();
+
+    Http::fake([
+        '*/route/v1/driving/*' => Http::response(respuestaOsrm([[0, 0], [0, 0]], 500, 60), 200),
+    ]);
+
+    $resultado = app(CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction::class)->ejecutar($mision);
+
+    expect($resultado)->toHaveCount(1)
+        ->and($resultado[0]['vehiculo']->id)->toBe($vehiculo->id);
+
+    // A mitad de camino de su regreso (-73.04,-36.82), no en su propio
+    // cuartel (-73.05,-36.83).
+    Http::assertSent(fn ($request) => str_contains($request->url(), '-73.040000,-36.820000'));
+
+    Carbon::setTestNow();
 });
 
 test('excludes vehicles belonging to other players', function () {

@@ -3,6 +3,7 @@
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Exceptions\VehiculoNoDisponibleException;
 use App\Dominio\Flota\Models\Vehiculo;
+use App\Dominio\Geo\Models\Ruta;
 use App\Dominio\Infraestructura\Models\Edificio;
 use App\Dominio\Misiones\Actions\DespacharUnidadesAMisionAction;
 use App\Dominio\Misiones\Jobs\ProcesarLlegadaVehiculoJob;
@@ -51,4 +52,31 @@ test('throws when the vehicle is not available and creates no dispatch', functio
         ->toThrow(VehiculoNoDisponibleException::class);
 
     expect(Despacho::count())->toBe(0);
+});
+
+test('redirects a returning vehicle to a new mission from its current position', function () {
+    $jugador = User::factory()->create();
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->create();
+    $rutaDeRegreso = Ruta::factory()->create();
+    $vehiculo = Vehiculo::factory()->for($edificio)->create([
+        'estado' => EstadoVehiculo::Regresando,
+        'mision_id' => null,
+        'ruta_id' => $rutaDeRegreso->id,
+        'sale_en' => now()->subMinute(),
+        'regresa_en' => now()->addMinute(),
+    ]);
+    $mision = Mision::factory()->for($jugador, 'jugador')->create();
+
+    $despacho = app(DespacharUnidadesAMisionAction::class)->ejecutar($vehiculo, $mision);
+
+    expect($despacho->mision_id)->toBe($mision->id);
+
+    $vehiculo->refresh();
+    expect($vehiculo->estado)->toBe(EstadoVehiculo::EnRuta)
+        ->and($vehiculo->mision_id)->toBe($mision->id)
+        ->and($vehiculo->ruta_id)->toBe($despacho->ruta_id)
+        ->and($vehiculo->sale_en)->toBeNull()
+        ->and($vehiculo->regresa_en)->toBeNull();
+
+    Queue::assertPushed(ProcesarLlegadaVehiculoJob::class, fn ($job) => $job->despachoId === $despacho->id);
 });
