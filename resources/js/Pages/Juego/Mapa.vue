@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AmpliarEstacionamientoForm from '@/Components/AmpliarEstacionamientoForm.vue';
 import CompraVehiculoForm from '@/Components/CompraVehiculoForm.vue';
 import MapaJuego from '@/Components/MapaJuego.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
@@ -28,6 +29,14 @@ const props = defineProps({
         required: true,
     },
     saldoCreditos: {
+        type: Number,
+        required: true,
+    },
+    estacionamientosMaximos: {
+        type: Number,
+        required: true,
+    },
+    costoAmpliacionEstacionamiento: {
         type: Number,
         required: true,
     },
@@ -228,6 +237,11 @@ useCanalJugador({
                             </p>
 
                             <CompraVehiculoForm :edificio="edificio" :tipos-vehiculo="tiposVehiculo" />
+                            <AmpliarEstacionamientoForm
+                                :edificio="edificio"
+                                :estacionamientos-maximos="estacionamientosMaximos"
+                                :costo-ampliacion="costoAmpliacionEstacionamiento"
+                            />
                         </li>
                     </ul>
                 </section>

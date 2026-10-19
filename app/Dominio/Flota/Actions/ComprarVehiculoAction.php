@@ -33,7 +33,7 @@ class ComprarVehiculoAction
             // concurrentes y no superar sus estacionamientos (RNF-05).
             $edificio = Edificio::query()->whereKey($edificio->id)->lockForUpdate()->firstOrFail();
 
-            if ($edificio->vehiculosComprados() >= $edificio->tipoEdificio->estacionamientos_base) {
+            if ($edificio->vehiculosComprados() >= $edificio->estacionamientosTotales()) {
                 throw new SinEstacionamientosDisponiblesException(
                     "El edificio {$edificio->nombre} no tiene estacionamientos disponibles."
                 );

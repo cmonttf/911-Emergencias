@@ -18,8 +18,12 @@ const form = useForm({
     tipo_vehiculo_id: props.tiposVehiculo[0]?.id ?? null,
 });
 
+const estacionamientosTotales = computed(
+    () => props.edificio.tipo_edificio.estacionamientos_base + props.edificio.estacionamientos_extra,
+);
+
 const estacionamientosLibres = computed(
-    () => props.edificio.tipo_edificio.estacionamientos_base - props.edificio.vehiculos.length,
+    () => estacionamientosTotales.value - props.edificio.vehiculos.length,
 );
 
 function comprar() {
@@ -31,7 +35,7 @@ function comprar() {
     <div class="mt-3 border-t border-gray-100 pt-3">
         <p class="text-xs text-gray-500">
             Estacionamientos libres: {{ estacionamientosLibres }} de
-            {{ edificio.tipo_edificio.estacionamientos_base }}
+            {{ estacionamientosTotales }}
         </p>
 
         <div v-if="estacionamientosLibres > 0" class="mt-2 flex gap-2">

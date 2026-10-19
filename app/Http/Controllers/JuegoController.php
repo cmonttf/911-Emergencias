@@ -35,6 +35,8 @@ class JuegoController extends Controller
             'tiposEdificio' => TipoEdificio::query()->get(),
             'tiposVehiculo' => TipoVehiculo::query()->get(),
             'saldoCreditos' => (new Billetera($jugador))->saldo(Moneda::Creditos),
+            'estacionamientosMaximos' => config('juego.estacionamientos_maximos'),
+            'costoAmpliacionEstacionamiento' => config('juego.costo_ampliacion_estacionamiento'),
         ]);
     }
 

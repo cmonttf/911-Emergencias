@@ -58,6 +58,23 @@ return [
     'edificios_minimos_mision_especial' => (int) env('JUEGO_EDIFICIOS_MINIMOS_MISION_ESPECIAL', 3),
 
     /*
+    | Límites globales de la recompensa en créditos de cualquier misión
+    | (RF-23): ningún tipo de misión puede pagar fuera de este rango, sin
+    | importar lo que diga su `creditos_min`/`creditos_max` propio ni cuánto
+    | haya tardado en completarse. Ver Mision::calcularRecompensaCreditos().
+    */
+    'recompensa_mision_minima' => (int) env('JUEGO_RECOMPENSA_MISION_MINIMA', 250),
+    'recompensa_mision_maxima' => (int) env('JUEGO_RECOMPENSA_MISION_MAXIMA', 500),
+
+    /*
+    | Cuántas veces más rápido puede resolverse una misión, como máximo, por
+    | enviarle más unidades de las que exige (Mision::calcularTiempoResolucionSegundos()).
+    | Sin este tope, mandar muchas unidades de más la resolvería casi al
+    | instante.
+    */
+    'factor_maximo_reduccion_tiempo_resolucion' => (float) env('JUEGO_FACTOR_MAXIMO_REDUCCION_TIEMPO_RESOLUCION', 3),
+
+    /*
     |--------------------------------------------------------------------------
     | Factor de velocidad del tiempo de juego
     |--------------------------------------------------------------------------
@@ -89,5 +106,18 @@ return [
     'nominatim' => [
         'base_url' => env('NOMINATIM_BASE_URL', 'http://127.0.0.1:8080'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Infraestructura
+    |--------------------------------------------------------------------------
+    |
+    | Un edificio empieza con los estacionamientos base de su tipo (ver
+    | tipos_edificio.estacionamientos_base, hoy 2 para el Cuartel de
+    | Bomberos) y puede ampliarlos de a 1 por vez hasta este tope, pagando
+    | este costo por cada ampliación (Edificio::estacionamientosTotales()).
+    */
+    'estacionamientos_maximos' => (int) env('JUEGO_ESTACIONAMIENTOS_MAXIMOS', 15),
+    'costo_ampliacion_estacionamiento' => (int) env('JUEGO_COSTO_AMPLIACION_ESTACIONAMIENTO', 1000),
 
 ];

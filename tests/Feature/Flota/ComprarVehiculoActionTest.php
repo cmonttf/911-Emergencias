@@ -41,6 +41,23 @@ test('throws when the building has no parking spots left', function () {
     expect(Vehiculo::count())->toBe(1);
 });
 
+test('allows buying beyond the base parking spots after they were extended', function () {
+    $jugador = User::factory()->create();
+    abonarCreditos($jugador, 1000);
+    $tipoEdificio = TipoEdificio::factory()->create(['estacionamientos_base' => 1]);
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->for($tipoEdificio, 'tipoEdificio')
+        ->create(['estacionamientos_extra' => 1]);
+    $tipoVehiculo = TipoVehiculo::factory()->create(['costo' => 100]);
+
+    app(ComprarVehiculoAction::class)->ejecutar($jugador, $edificio, $tipoVehiculo);
+    app(ComprarVehiculoAction::class)->ejecutar($jugador, $edificio, $tipoVehiculo);
+
+    expect(Vehiculo::count())->toBe(2);
+
+    expect(fn () => app(ComprarVehiculoAction::class)->ejecutar($jugador, $edificio, $tipoVehiculo))
+        ->toThrow(SinEstacionamientosDisponiblesException::class);
+});
+
 test('throws when the player cannot afford the vehicle and does not create it', function () {
     $jugador = User::factory()->create();
     abonarCreditos($jugador, 50);

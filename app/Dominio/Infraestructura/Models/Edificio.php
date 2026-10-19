@@ -25,6 +25,7 @@ class Edificio extends Model
     protected $fillable = [
         'jugador_id',
         'tipo_edificio_id',
+        'estacionamientos_extra',
         'nombre',
         'direccion',
         'latitud',
@@ -48,11 +49,20 @@ class Edificio extends Model
 
     /**
      * Cantidad de vehículos que ya ocupan un estacionamiento del edificio,
-     * usada para no superar `tipoEdificio->estacionamientos_base` (RF-51).
+     * usada para no superar `estacionamientosTotales()` (RF-51).
      */
     public function vehiculosComprados(): int
     {
         return $this->vehiculos()->count();
+    }
+
+    /**
+     * Estacionamientos del edificio: los base de su tipo, más los que este
+     * edificio en particular haya ampliado (AmpliarEstacionamientosEdificioAction).
+     */
+    public function estacionamientosTotales(): int
+    {
+        return $this->tipoEdificio->estacionamientos_base + $this->estacionamientos_extra;
     }
 
     /**

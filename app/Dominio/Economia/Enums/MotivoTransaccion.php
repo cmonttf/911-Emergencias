@@ -11,5 +11,6 @@ enum MotivoTransaccion: string
     case CreditoInicial = 'credito_inicial';
     case ConstruccionEdificio = 'construccion_edificio';
     case CompraVehiculo = 'compra_vehiculo';
+    case AmpliacionEstacionamiento = 'ampliacion_estacionamiento';
     case RecompensaMision = 'recompensa_mision';
 }

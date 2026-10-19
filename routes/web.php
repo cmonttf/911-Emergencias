@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AmpliacionEstacionamientoController;
 use App\Http\Controllers\DespachoController;
 use App\Http\Controllers\EdificioController;
 use App\Http\Controllers\JuegoController;
@@ -26,6 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/edificios', [EdificioController::class, 'store'])->name('edificios.store');
+    Route::post('/edificios/{edificio}/estacionamientos', [AmpliacionEstacionamientoController::class, 'store'])->name('estacionamientos.store');
     Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
 
     Route::get('/misiones', [MisionController::class, 'index'])->name('misiones.index');
