@@ -32,7 +32,9 @@ function misionEnAtencionConUnidadPresente(): Mision
     $jugador = User::factory()->create();
     $edificio = Edificio::factory()->for($jugador, 'jugador')->create();
     $vehiculo = Vehiculo::factory()->for($edificio)->create(['estado' => EstadoVehiculo::EnElLugar]);
-    $tipoMision = TipoMision::factory()->create(['creditos' => 250]);
+    // min = max para que la recompensa sea siempre 250, sin importar cuánto
+    // tiempo real tome la prueba en ejecutarse.
+    $tipoMision = TipoMision::factory()->create(['creditos_min' => 250, 'creditos_max' => 250]);
     RequisitoTipoMision::factory()->for($tipoMision)->create([
         'tipo_vehiculo_id' => $vehiculo->tipo_vehiculo_id,
         'cantidad' => 1,
@@ -70,7 +72,7 @@ test('is idempotent and never pays credits twice', function () {
     (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $regresarVehiculo);
     (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $regresarVehiculo);
 
-    expect((new Billetera($jugador))->saldo(Moneda::Creditos))->toBe($mision->tipoMision->creditos);
+    expect((new Billetera($jugador))->saldo(Moneda::Creditos))->toBe($mision->tipoMision->creditos_min);
 });
 
 test('does not complete when requirements are no longer covered', function () {

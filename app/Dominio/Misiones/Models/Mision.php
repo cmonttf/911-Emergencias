@@ -117,6 +117,54 @@ class Mision extends Model
     }
 
     /**
+     * Recompensa en créditos por completar esta misión (RF-23): entre el
+     * mínimo y el máximo propios de su tipo, más cerca del máximo mientras
+     * menos de su presupuesto de tiempo (desde que se generó hasta que
+     * vence) se haya usado al completarla. Nunca sale del rango global
+     * configurado, sin importar lo que diga el tipo de misión.
+     */
+    public function calcularRecompensaCreditos(): int
+    {
+        $tipoMision = $this->tipoMision;
+
+        $presupuestoSegundos = $this->created_at->diffInSeconds($this->vence_en);
+        $usadoSegundos = $this->created_at->diffInSeconds(now());
+
+        $fraccionUsada = $presupuestoSegundos > 0
+            ? min(1.0, max(0.0, $usadoSegundos / $presupuestoSegundos))
+            : 1.0;
+
+        $factorRapidez = 1 - $fraccionUsada;
+
+        $recompensa = $tipoMision->creditos_min
+            + ($tipoMision->creditos_max - $tipoMision->creditos_min) * $factorRapidez;
+
+        return (int) round(min(
+            config('juego.recompensa_mision_maxima'),
+            max(config('juego.recompensa_mision_minima'), $recompensa),
+        ));
+    }
+
+    /**
+     * Tiempo de resolución ajustado por cuántas unidades están presentes
+     * respecto a las que exige el tipo de misión (RF-24): el doble de
+     * unidades requeridas la resuelve en la mitad de tiempo, el triple en
+     * un tercio, etc., hasta el tope configurado para que no se vuelva
+     * instantánea por mandar unidades de más.
+     */
+    public function calcularTiempoResolucionSegundos(): int
+    {
+        $tipoMision = $this->tipoMision;
+        $totalRequerido = $tipoMision->requisitos->sum('cantidad');
+        $totalPresentes = $this->vehiculosPresentes()->count();
+
+        $factorUnidades = $totalRequerido > 0 ? max(1.0, $totalPresentes / $totalRequerido) : 1.0;
+        $factorUnidades = min($factorUnidades, config('juego.factor_maximo_reduccion_tiempo_resolucion'));
+
+        return (int) round($tipoMision->tiempo_resolucion_segundos / $factorUnidades);
+    }
+
+    /**
      * Los modelos de dominio viven fuera de `App\Models`, así que la
      * resolución automática de factories de Laravel no los encuentra.
      */

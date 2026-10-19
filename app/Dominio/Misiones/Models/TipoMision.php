@@ -25,7 +25,8 @@ class TipoMision extends Model
         'nombre',
         'institucion_principal',
         'descripcion',
-        'creditos',
+        'creditos_min',
+        'creditos_max',
         'tiempo_limite_segundos',
         'tiempo_resolucion_segundos',
     ];

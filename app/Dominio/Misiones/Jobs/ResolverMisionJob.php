@@ -39,7 +39,7 @@ class ResolverMisionJob implements ShouldQueue
             $registrarTransaccion->ejecutar(
                 jugador: $mision->jugador,
                 moneda: Moneda::Creditos,
-                monto: $mision->tipoMision->creditos,
+                monto: $mision->calcularRecompensaCreditos(),
                 motivo: MotivoTransaccion::RecompensaMision,
                 referencia: $mision,
             );

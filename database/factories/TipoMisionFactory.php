@@ -24,7 +24,8 @@ class TipoMisionFactory extends Factory
             'nombre' => 'Fuego en cocina',
             'institucion_principal' => Institucion::Bomberos,
             'descripcion' => 'Principio de incendio en la cocina de una vivienda.',
-            'creditos' => 150,
+            'creditos_min' => 250,
+            'creditos_max' => 300,
             'tiempo_limite_segundos' => 600,
             'tiempo_resolucion_segundos' => 120,
         ];

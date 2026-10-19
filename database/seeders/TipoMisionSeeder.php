@@ -41,11 +41,17 @@ class TipoMisionSeeder extends Seeder
     }
 
     /**
+     * Los créditos de cada tipo van siempre entre 250 y 500 (RF-23): el
+     * rango concreto de cada uno refleja su severidad relativa; dentro de
+     * ese rango, Mision::calcularRecompensaCreditos() paga más cerca del
+     * máximo mientras más rápido se haya completado.
+     *
      * @return list<array{
      *     nombre: string,
      *     institucion_principal: Institucion,
      *     descripcion: string,
-     *     creditos: int,
+     *     creditos_min: int,
+     *     creditos_max: int,
      *     tiempo_limite_segundos: int,
      *     tiempo_resolucion_segundos: int,
      *     requisitos: array<string, int>,
@@ -58,7 +64,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Fuego en cocina',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Principio de incendio en la cocina de una vivienda.',
-                'creditos' => 150,
+                'creditos_min' => 250,
+                'creditos_max' => 300,
                 'tiempo_limite_segundos' => 600,
                 'tiempo_resolucion_segundos' => 90,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 1],
@@ -67,7 +74,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Incendio estructural',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Incendio declarado en una vivienda o local comercial.',
-                'creditos' => 400,
+                'creditos_min' => 300,
+                'creditos_max' => 380,
                 'tiempo_limite_segundos' => 900,
                 'tiempo_resolucion_segundos' => 240,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 2, EspecialidadVehiculo::Mando->value => 1],
@@ -76,7 +84,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Incendio en edificio de altura',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Incendio en un piso alto que requiere escala y agua.',
-                'creditos' => 550,
+                'creditos_min' => 350,
+                'creditos_max' => 420,
                 'tiempo_limite_segundos' => 900,
                 'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::Escala->value => 1, EspecialidadVehiculo::Agua->value => 1],
@@ -85,7 +94,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Incendio forestal',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Fuego en pastizal o matorral cercano a viviendas.',
-                'creditos' => 350,
+                'creditos_min' => 300,
+                'creditos_max' => 380,
                 'tiempo_limite_segundos' => 1200,
                 'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 2],
@@ -94,7 +104,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Rescate vehicular',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Accidente de tránsito con personas atrapadas.',
-                'creditos' => 300,
+                'creditos_min' => 280,
+                'creditos_max' => 350,
                 'tiempo_limite_segundos' => 600,
                 'tiempo_resolucion_segundos' => 180,
                 'requisitos' => [EspecialidadVehiculo::Rescate->value => 1],
@@ -103,7 +114,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Rescate en derrumbe',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Colapso parcial de una estructura con personas atrapadas.',
-                'creditos' => 500,
+                'creditos_min' => 380,
+                'creditos_max' => 460,
                 'tiempo_limite_segundos' => 1200,
                 'tiempo_resolucion_segundos' => 360,
                 'requisitos' => [EspecialidadVehiculo::Rescate->value => 1, EspecialidadVehiculo::Mando->value => 1],
@@ -112,7 +124,8 @@ class TipoMisionSeeder extends Seeder
                 'nombre' => 'Emergencia con materiales peligrosos',
                 'institucion_principal' => Institucion::Bomberos,
                 'descripcion' => 'Derrame o fuga de una sustancia peligrosa en una zona industrial.',
-                'creditos' => 600,
+                'creditos_min' => 400,
+                'creditos_max' => 500,
                 'tiempo_limite_segundos' => 900,
                 'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::MaterialesPeligrosos->value => 1, EspecialidadVehiculo::Mando->value => 1],

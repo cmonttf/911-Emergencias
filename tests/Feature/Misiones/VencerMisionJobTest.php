@@ -30,7 +30,7 @@ beforeEach(function () {
 
 test('fails an uncovered mission without paying credits', function () {
     $jugador = User::factory()->create();
-    $tipoMision = TipoMision::factory()->create(['creditos' => 300]);
+    $tipoMision = TipoMision::factory()->create(['creditos_min' => 300, 'creditos_max' => 300]);
     RequisitoTipoMision::factory()->for($tipoMision)->create(['cantidad' => 1]);
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
 
@@ -102,7 +102,7 @@ test('does not expire a mission whose requirements are already covered', functio
 
 test('is idempotent when run twice', function () {
     $jugador = User::factory()->create();
-    $tipoMision = TipoMision::factory()->create(['creditos' => 300]);
+    $tipoMision = TipoMision::factory()->create(['creditos_min' => 300, 'creditos_max' => 300]);
     RequisitoTipoMision::factory()->for($tipoMision)->create(['cantidad' => 1]);
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
 
