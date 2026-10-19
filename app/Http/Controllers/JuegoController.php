@@ -43,8 +43,8 @@ class JuegoController extends Controller
 
     /**
      * Misiones generadas o en atención del jugador, con las unidades
-     * disponibles para despacharlas directamente desde el mapa (sin pasar
-     * por su detalle).
+     * disponibles para despacharlas y las que todavía faltan, para poder
+     * despachar directamente desde el mapa sin pasar por su detalle.
      *
      * @return Collection<int, Mision>
      */
@@ -61,6 +61,9 @@ class JuegoController extends Controller
                         'duracionSegundos' => $item['duracionSegundos'],
                     ])
                     ->values();
+
+                $faltantes = $mision->requisitosFaltantes();
+                $mision->requisitosFaltantes = $faltantes;
             });
     }
 

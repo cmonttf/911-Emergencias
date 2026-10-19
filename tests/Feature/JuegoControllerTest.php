@@ -73,6 +73,9 @@ test('an active mission on the map lists the units available to dispatch it', fu
             ->where('misiones.0.unidadesDisponibles.0.vehiculo.id', $vehiculo->id)
             ->has('misiones.0.tipo_mision.requisitos', 1)
             ->where('misiones.0.tipo_mision.requisitos.0.tipo_vehiculo.id', $vehiculo->tipo_vehiculo_id)
+            // Todavía no se despachó nadie: falta la unidad completa.
+            ->has('misiones.0.requisitosFaltantes', 1)
+            ->where('misiones.0.requisitosFaltantes.0.faltan', 1)
         );
 });
 

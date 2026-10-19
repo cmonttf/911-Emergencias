@@ -43,6 +43,13 @@ defineProps({
             </span>
         </p>
 
+        <p v-if="mision.requisitosFaltantes.length > 0" class="mt-1 text-xs text-amber-700">
+            Faltan:
+            <span v-for="(requisito, indice) in mision.requisitosFaltantes" :key="requisito.tipoVehiculo.id">
+                {{ requisito.faltan }}× {{ requisito.tipoVehiculo.nombre }}<span v-if="indice < mision.requisitosFaltantes.length - 1">, </span>
+            </span>
+        </p>
+
         <div class="mt-3 border-t border-gray-100 pt-3">
             <DespacharUnidadesForm :mision-id="mision.id" :unidades-disponibles="mision.unidadesDisponibles" />
         </div>
