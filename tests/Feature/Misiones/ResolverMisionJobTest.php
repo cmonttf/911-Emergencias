@@ -3,13 +3,14 @@
 use App\Dominio\Economia\Actions\RegistrarTransaccionAction;
 use App\Dominio\Economia\Billetera;
 use App\Dominio\Economia\Enums\Moneda;
-use App\Dominio\Flota\Actions\RegresarVehiculoABaseAction;
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Infraestructura\Models\Edificio;
+use App\Dominio\Misiones\Actions\RecallarUnidadesAsignadasAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Jobs\ResolverMisionJob;
+use App\Dominio\Misiones\Models\Despacho;
 use App\Dominio\Misiones\Models\Mision;
 use App\Dominio\Misiones\Models\RequisitoTipoMision;
 use App\Dominio\Misiones\Models\TipoMision;
@@ -49,7 +50,7 @@ test('completes the mission, pays its credits and sends vehicles back to base', 
     $mision = misionEnAtencionConUnidadPresente();
     $jugador = $mision->jugador;
 
-    (new ResolverMisionJob($mision->id))->handle(app(RegistrarTransaccionAction::class), app(RegresarVehiculoABaseAction::class));
+    (new ResolverMisionJob($mision->id))->handle(app(RegistrarTransaccionAction::class), app(RecallarUnidadesAsignadasAction::class));
 
     $mision->refresh();
     expect($mision->estado)->toBe(EstadoMision::Completada)
@@ -62,15 +63,36 @@ test('completes the mission, pays its credits and sends vehicles back to base', 
     Queue::assertPushed(ProcesarRegresoVehiculoJob::class, fn ($job) => $job->vehiculoId === $vehiculo->id);
 });
 
+test('recalls an extra en-route vehicle too, not just the ones already on scene', function () {
+    $mision = misionEnAtencionConUnidadPresente();
+    $edificio = Edificio::factory()->for($mision->jugador, 'jugador')->create();
+    // Una segunda unidad despachada de más, que todavía iba en camino
+    // cuando la misión se resolvió solo con la primera.
+    $vehiculoDeMas = Vehiculo::factory()->for($edificio)->create([
+        'estado' => EstadoVehiculo::EnRuta,
+        'mision_id' => $mision->id,
+    ]);
+    Despacho::factory()->for($mision)->for($vehiculoDeMas)->create([
+        'salida_en' => now()->subMinute(),
+        'llegada_en' => now()->addMinutes(5),
+    ]);
+
+    (new ResolverMisionJob($mision->id))->handle(app(RegistrarTransaccionAction::class), app(RecallarUnidadesAsignadasAction::class));
+
+    $vehiculoDeMas->refresh();
+    expect($vehiculoDeMas->estado)->toBe(EstadoVehiculo::Regresando);
+    Queue::assertPushed(ProcesarRegresoVehiculoJob::class, fn ($job) => $job->vehiculoId === $vehiculoDeMas->id);
+});
+
 test('is idempotent and never pays credits twice', function () {
     $mision = misionEnAtencionConUnidadPresente();
     $jugador = $mision->jugador;
 
     $registrarTransaccion = app(RegistrarTransaccionAction::class);
-    $regresarVehiculo = app(RegresarVehiculoABaseAction::class);
+    $recallarUnidades = app(RecallarUnidadesAsignadasAction::class);
 
-    (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $regresarVehiculo);
-    (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $regresarVehiculo);
+    (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $recallarUnidades);
+    (new ResolverMisionJob($mision->id))->handle($registrarTransaccion, $recallarUnidades);
 
     expect((new Billetera($jugador))->saldo(Moneda::Creditos))->toBe($mision->tipoMision->creditos_min);
 });
@@ -81,7 +103,7 @@ test('does not complete when requirements are no longer covered', function () {
 
     (new ResolverMisionJob($mision->id))->handle(
         app(RegistrarTransaccionAction::class),
-        app(RegresarVehiculoABaseAction::class),
+        app(RecallarUnidadesAsignadasAction::class),
     );
 
     $mision->refresh();

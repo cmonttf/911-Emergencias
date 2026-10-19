@@ -5,7 +5,7 @@ namespace App\Dominio\Misiones\Jobs;
 use App\Dominio\Economia\Actions\RegistrarTransaccionAction;
 use App\Dominio\Economia\Enums\Moneda;
 use App\Dominio\Economia\Enums\MotivoTransaccion;
-use App\Dominio\Flota\Actions\RegresarVehiculoABaseAction;
+use App\Dominio\Misiones\Actions\RecallarUnidadesAsignadasAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Events\MisionCompletada;
 use App\Dominio\Misiones\Models\Mision;
@@ -15,9 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Resuelve una misión "en atención" cuyo tiempo de resolución se cumplió:
- * abona sus créditos y devuelve a la base las unidades presentes. Vuelve a
- * comprobar los requisitos antes de completar, por si una unidad presente
- * se canceló mientras tanto (ya no correspondería completarla).
+ * abona sus créditos y recalla todas las unidades asignadas (RecallarUnidadesAsignadasAction),
+ * sin importar si son más de las que exigían sus requisitos: una unidad
+ * todavía en camino también debe volver a su base, no solo las que ya
+ * llegaron. Vuelve a comprobar los requisitos antes de completar, por si
+ * una unidad presente se canceló mientras tanto (ya no correspondería
+ * completarla).
  */
 class ResolverMisionJob implements ShouldQueue
 {
@@ -25,7 +28,7 @@ class ResolverMisionJob implements ShouldQueue
 
     public function __construct(public readonly int $misionId) {}
 
-    public function handle(RegistrarTransaccionAction $registrarTransaccion, RegresarVehiculoABaseAction $regresarVehiculo): void
+    public function handle(RegistrarTransaccionAction $registrarTransaccion, RecallarUnidadesAsignadasAction $recallarUnidades): void
     {
         $mision = DB::transaction(function () use ($registrarTransaccion) {
             $mision = Mision::query()->whereKey($this->misionId)->lockForUpdate()->first();
@@ -53,10 +56,8 @@ class ResolverMisionJob implements ShouldQueue
             return;
         }
 
-        // Las llamadas a OSRM quedan fuera de la transacción anterior para
-        // no mantener bloqueos de fila mientras se espera una red externa.
-        foreach ($mision->vehiculosPresentes() as $vehiculo) {
-            $regresarVehiculo->ejecutar($vehiculo, $mision->puntoGeografico());
-        }
+        // Fuera de la transacción anterior: recallar unidades implica
+        // llamadas a OSRM, que no deben hacerse mientras se sostiene un lock.
+        $recallarUnidades->ejecutar($mision);
     }
 }

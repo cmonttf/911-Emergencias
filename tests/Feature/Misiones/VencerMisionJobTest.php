@@ -2,12 +2,11 @@
 
 use App\Dominio\Economia\Billetera;
 use App\Dominio\Economia\Enums\Moneda;
-use App\Dominio\Flota\Actions\RegresarVehiculoABaseAction;
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Infraestructura\Models\Edificio;
-use App\Dominio\Misiones\Actions\CancelarDespachoAction;
+use App\Dominio\Misiones\Actions\RecallarUnidadesAsignadasAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Jobs\VencerMisionJob;
 use App\Dominio\Misiones\Models\Despacho;
@@ -34,7 +33,7 @@ test('fails an uncovered mission without paying credits', function () {
     RequisitoTipoMision::factory()->for($tipoMision)->create(['cantidad' => 1]);
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
 
-    (new VencerMisionJob($mision->id))->handle(app(CancelarDespachoAction::class), app(RegresarVehiculoABaseAction::class));
+    (new VencerMisionJob($mision->id))->handle(app(RecallarUnidadesAsignadasAction::class));
 
     $mision->refresh();
     expect($mision->estado)->toBe(EstadoMision::Fallida)
@@ -57,7 +56,7 @@ test('recalls an en-route vehicle by cancelling its dispatch', function () {
         'llegada_en' => now()->addMinutes(5),
     ]);
 
-    (new VencerMisionJob($mision->id))->handle(app(CancelarDespachoAction::class), app(RegresarVehiculoABaseAction::class));
+    (new VencerMisionJob($mision->id))->handle(app(RecallarUnidadesAsignadasAction::class));
 
     $vehiculo->refresh();
     expect($vehiculo->estado)->toBe(EstadoVehiculo::Regresando);
@@ -76,7 +75,7 @@ test('recalls an on-scene vehicle directly from the mission location', function 
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
     $vehiculo->update(['mision_id' => $mision->id]);
 
-    (new VencerMisionJob($mision->id))->handle(app(CancelarDespachoAction::class), app(RegresarVehiculoABaseAction::class));
+    (new VencerMisionJob($mision->id))->handle(app(RecallarUnidadesAsignadasAction::class));
 
     $vehiculo->refresh();
     expect($vehiculo->estado)->toBe(EstadoVehiculo::Regresando);
@@ -94,7 +93,7 @@ test('does not expire a mission whose requirements are already covered', functio
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::EnAtencion]);
     $vehiculo->update(['mision_id' => $mision->id]);
 
-    (new VencerMisionJob($mision->id))->handle(app(CancelarDespachoAction::class), app(RegresarVehiculoABaseAction::class));
+    (new VencerMisionJob($mision->id))->handle(app(RecallarUnidadesAsignadasAction::class));
 
     $mision->refresh();
     expect($mision->estado)->toBe(EstadoMision::EnAtencion);
@@ -106,11 +105,10 @@ test('is idempotent when run twice', function () {
     RequisitoTipoMision::factory()->for($tipoMision)->create(['cantidad' => 1]);
     $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
 
-    $cancelarDespacho = app(CancelarDespachoAction::class);
-    $regresarVehiculo = app(RegresarVehiculoABaseAction::class);
+    $recallarUnidades = app(RecallarUnidadesAsignadasAction::class);
 
-    (new VencerMisionJob($mision->id))->handle($cancelarDespacho, $regresarVehiculo);
-    (new VencerMisionJob($mision->id))->handle($cancelarDespacho, $regresarVehiculo);
+    (new VencerMisionJob($mision->id))->handle($recallarUnidades);
+    (new VencerMisionJob($mision->id))->handle($recallarUnidades);
 
     expect((new Billetera($jugador))->saldo(Moneda::Creditos))->toBe(0);
 });
