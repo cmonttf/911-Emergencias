@@ -8,7 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // ("Worker failed to load"). Resolver el worker con `?url` y fijarlo
 // explícitamente funciona igual en ambos modos.
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { fraccionDeTiempo, puntoEnFraccion } from '@/utils/interpolarRuta';
+import { caminoRestante, fraccionDeTiempo } from '@/utils/interpolarRuta';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -56,6 +56,8 @@ const COLOR_POR_ESTADO_MISION = {
     completada: '#22c55e',
     fallida: '#ef4444',
 };
+
+const RUTA_VEHICULOS_ID = 'rutas-vehiculos';
 
 const contenedor = ref(null);
 let mapa = null;
@@ -126,12 +128,14 @@ function dibujarUnidadesEnElLugar() {
 }
 
 /**
- * Posición actual de un vehículo en movimiento según la hora (RNF-02).
+ * Camino que le falta recorrer a un vehículo en movimiento según la hora
+ * (RNF-02): el primer punto es su posición actual, el resto es la ruta que
+ * todavía no pasó.
  */
-function posicionVehiculo(datos) {
+function caminoRestanteDe(datos) {
     const fraccion = fraccionDeTiempo(datos.salidaEn, datos.llegadaEn);
 
-    return puntoEnFraccion(datos.geometria, fraccion);
+    return caminoRestante(datos.geometria, fraccion);
 }
 
 /**
@@ -159,7 +163,7 @@ function sincronizarMarcadoresVehiculo() {
         }
 
         const marcador = new Marker({ color: '#0ea5e9' })
-            .setLngLat(posicionVehiculo(vehiculo))
+            .setLngLat(caminoRestanteDe(vehiculo)[0])
             .setPopup(new Popup().setText(vehiculo.tipoVehiculo))
             .addTo(mapa);
 
@@ -173,15 +177,31 @@ function sincronizarMarcadoresVehiculo() {
  * ni el propio bucle: sin este try/catch, un solo error deja a todos los
  * vehículos congelados para siempre, porque nunca se volvería a agendar el
  * siguiente `requestAnimationFrame`.
+ *
+ * Además de mover el marcador, redibuja la ruta pendiente de cada
+ * vehículo: el tramo ya recorrido se "borra" en cada cuadro porque la
+ * línea solo incluye el camino que falta (caminoRestante), nunca la ruta
+ * completa fija.
  */
 function animar() {
+    const tramosPendientes = [];
+
     for (const [id, { marcador, datos }] of marcadoresVehiculo) {
         try {
-            marcador.setLngLat(posicionVehiculo(datos));
+            const camino = caminoRestanteDe(datos);
+            marcador.setLngLat(camino[0]);
+
+            tramosPendientes.push({
+                type: 'Feature',
+                properties: { vehiculoId: id },
+                geometry: { type: 'LineString', coordinates: camino },
+            });
         } catch (error) {
             console.error(`No se pudo calcular la posición del vehículo ${id}.`, error);
         }
     }
+
+    mapa.getSource(RUTA_VEHICULOS_ID)?.setData({ type: 'FeatureCollection', features: tramosPendientes });
 
     cuadroAnimacion = requestAnimationFrame(animar);
 }
@@ -216,6 +236,15 @@ onMounted(() => {
     });
 
     mapa.on('load', () => {
+        mapa.addSource(RUTA_VEHICULOS_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        mapa.addLayer({
+            id: RUTA_VEHICULOS_ID,
+            type: 'line',
+            source: RUTA_VEHICULOS_ID,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#0ea5e9', 'line-width': 3, 'line-opacity': 0.7 },
+        });
+
         dibujarEdificios();
         dibujarMisiones();
         sincronizarMarcadoresVehiculo();
@@ -244,6 +273,6 @@ watch(() => props.puntoPendiente, () => mapa?.loaded() && dibujarPuntoPendiente(
         ref="contenedor"
         class="h-full w-full"
         role="application"
-        aria-label="Mapa de edificios, misiones y vehículos en movimiento o en el lugar de una misión. Usa los campos de latitud y longitud para una alternativa sin mapa."
+        aria-label="Mapa de edificios, misiones y vehículos en movimiento (con la ruta que les falta por recorrer) o en el lugar de una misión. Usa los campos de latitud y longitud para una alternativa sin mapa."
     />
 </template>

@@ -147,6 +147,9 @@ useCanalJugador({
                     <li class="flex items-center gap-1.5">
                         <span class="h-2.5 w-2.5 rounded-full bg-[#22c55e]" aria-hidden="true" /> Vehículo en el lugar
                     </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-0.5 w-3 bg-[#0ea5e9]" aria-hidden="true" /> Ruta pendiente (ida o vuelta)
+                    </li>
                 </ul>
             </div>
 
