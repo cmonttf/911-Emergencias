@@ -187,6 +187,11 @@ Ver `.env.example` para la lista completa. Las específicas de este proyecto
 están agrupadas bajo `# --- Central de Emergencias Chile ---`:
 
 - `OSRM_BASE_URL`, `NOMINATIM_BASE_URL`: URLs de los servicios geoespaciales.
+- `JUEGO_OSRM_VELOCIDAD_EXTRA_KMH`: las unidades despachadas no viajan a la
+  duración "de tránsito normal" que devuelve OSRM, sino a la velocidad que
+  OSRM asume para cada calle (según su tipo y límite) más este extra en
+  km/h (por defecto 10). Afecta tanto el viaje hacia la misión como el
+  regreso a la base.
 - `VITE_MAPTILER_KEY`: API key gratuita de MapTiler para el estilo del mapa
   (opcional; sin ella se usa el estilo público y sin API key de
   [OpenFreeMap](https://openfreemap.org/), que sí trae calles y edificios a
