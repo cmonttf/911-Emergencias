@@ -75,6 +75,15 @@ return [
     */
     'osrm' => [
         'base_url' => env('OSRM_BASE_URL', 'http://127.0.0.1:5000'),
+
+        /*
+        | Las unidades de emergencia circulan más rápido que el tránsito
+        | normal. En vez de usar la duración "de tránsito normal" que
+        | devuelve OSRM, se recalcula tramo a tramo con la velocidad que
+        | OSRM asume para cada calle (según su tipo y límite) más este
+        | extra, en km/h.
+        */
+        'velocidad_extra_kmh' => (float) env('JUEGO_OSRM_VELOCIDAD_EXTRA_KMH', 10),
     ],
 
     'nominatim' => [

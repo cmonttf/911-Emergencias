@@ -8,10 +8,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Http::fake([
-        '*/route/v1/driving/*' => Http::response([
-            'code' => 'Ok',
-            'routes' => [['geometry' => ['coordinates' => [[0, 0], [0, 0]]], 'distance' => 100, 'duration' => 100]],
-        ], 200),
+        '*/route/v1/driving/*' => Http::response(respuestaOsrm([[0, 0], [0, 0]], 100, 100), 200),
     ]);
 });
 

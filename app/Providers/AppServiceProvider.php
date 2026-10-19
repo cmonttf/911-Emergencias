@@ -16,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(
             OsrmClient::class,
-            fn () => new OsrmClient(config('juego.osrm.base_url')),
+            fn () => new OsrmClient(
+                config('juego.osrm.base_url'),
+                config('juego.osrm.velocidad_extra_kmh'),
+            ),
         );
 
         $this->app->singleton(

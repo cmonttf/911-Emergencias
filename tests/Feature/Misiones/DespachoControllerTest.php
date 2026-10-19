@@ -14,10 +14,7 @@ beforeEach(function () {
     // resolución y regreso del vehículo dentro de esta misma petición.
     Queue::fake();
     Http::fake([
-        '*/route/v1/driving/*' => Http::response([
-            'code' => 'Ok',
-            'routes' => [['geometry' => ['coordinates' => [[0, 0], [0, 0]]], 'distance' => 100, 'duration' => 100]],
-        ], 200),
+        '*/route/v1/driving/*' => Http::response(respuestaOsrm([[0, 0], [0, 0]], 100, 100), 200),
     ]);
 });
 

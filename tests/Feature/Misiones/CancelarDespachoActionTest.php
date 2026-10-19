@@ -15,14 +15,10 @@ use Illuminate\Support\Facades\Queue;
 beforeEach(function () {
     Queue::fake();
     Http::fake([
-        '*/route/v1/driving/*' => Http::response([
-            'code' => 'Ok',
-            'routes' => [[
-                'geometry' => ['coordinates' => [[-73.0450, -36.8250], [-73.0498, -36.8270]]],
-                'distance' => 600,
-                'duration' => 60,
-            ]],
-        ], 200),
+        '*/route/v1/driving/*' => Http::response(
+            respuestaOsrm([[-73.0450, -36.8250], [-73.0498, -36.8270]], 600, 60),
+            200,
+        ),
     ]);
 });
 

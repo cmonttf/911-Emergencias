@@ -22,14 +22,11 @@ test('sorts available vehicles of the player by estimated arrival time', functio
     Http::fake(function ($request) use ($edificioCercano) {
         $esOrigenCercano = str_contains($request->url(), (string) $edificioCercano->longitud);
 
-        return Http::response([
-            'code' => 'Ok',
-            'routes' => [[
-                'geometry' => ['coordinates' => [[-73.0498, -36.8270], [-73.0500, -36.8275]]],
-                'distance' => $esOrigenCercano ? 400 : 9000,
-                'duration' => $esOrigenCercano ? 90 : 900,
-            ]],
-        ], 200);
+        return Http::response(respuestaOsrm(
+            [[-73.0498, -36.8270], [-73.0500, -36.8275]],
+            $esOrigenCercano ? 400 : 9000,
+            $esOrigenCercano ? 90 : 900,
+        ), 200);
     });
 
     $resultado = app(CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction::class)->ejecutar($mision);
@@ -53,10 +50,7 @@ test('excludes vehicles belonging to other players', function () {
     $mision = Mision::factory()->for($jugador, 'jugador')->create();
 
     Http::fake([
-        '*/route/v1/driving/*' => Http::response([
-            'code' => 'Ok',
-            'routes' => [['geometry' => ['coordinates' => [[0, 0], [0, 0]]], 'distance' => 100, 'duration' => 100]],
-        ], 200),
+        '*/route/v1/driving/*' => Http::response(respuestaOsrm([[0, 0], [0, 0]], 100, 100), 200),
     ]);
 
     $resultado = app(CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction::class)->ejecutar($mision);
@@ -84,10 +78,7 @@ test('excludes a vehicle whose route calculation fails instead of breaking the w
             return Http::response(null, 503);
         }
 
-        return Http::response([
-            'code' => 'Ok',
-            'routes' => [['geometry' => ['coordinates' => [[0, 0], [0, 0]]], 'distance' => 100, 'duration' => 100]],
-        ], 200);
+        return Http::response(respuestaOsrm([[0, 0], [0, 0]], 100, 100), 200);
     });
 
     $resultado = app(CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction::class)->ejecutar($mision);

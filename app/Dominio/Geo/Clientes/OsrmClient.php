@@ -17,7 +17,10 @@ class OsrmClient
     /** Identifica la app ante el servidor de demostración público de OSRM. */
     private const string USER_AGENT = 'CentralDeEmergenciasChile/1.0 (proyecto educativo)';
 
-    public function __construct(private readonly string $baseUrl) {}
+    public function __construct(
+        private readonly string $baseUrl,
+        private readonly float $velocidadExtraKmh,
+    ) {}
 
     /**
      * Pide a OSRM la ruta en auto más rápida entre dos puntos.
@@ -41,6 +44,7 @@ class OsrmClient
                 ->get("route/v1/driving/{$coordenadas}", [
                     'overview' => 'full',
                     'geometries' => 'geojson',
+                    'annotations' => 'true',
                 ]);
         } catch (ConnectionException $excepcion) {
             throw new ServicioGeoNoDisponibleException(
@@ -61,7 +65,44 @@ class OsrmClient
         return new ResultadoRuta(
             geometria: $ruta['geometry']['coordinates'],
             distanciaMetros: (int) round($ruta['distance']),
-            duracionSegundos: (int) round($ruta['duration']),
+            duracionSegundos: $this->duracionConVelocidadDeEmergencia($ruta),
         );
+    }
+
+    /**
+     * Una unidad de emergencia circula más rápido que el tránsito normal:
+     * en vez de la duración "de tránsito normal" que devuelve OSRM, se
+     * recalcula tramo a tramo usando la velocidad que OSRM asume para cada
+     * calle (`annotation.speed`, que refleja su tipo y límite permitido)
+     * más `velocidadExtraKmh`.
+     *
+     * @param  array{legs: list<array{annotation: array{distance: list<float>, speed: list<float>, duration: list<float>}}>}  $ruta
+     */
+    private function duracionConVelocidadDeEmergencia(array $ruta): int
+    {
+        $segundos = 0.0;
+
+        foreach ($ruta['legs'] as $tramo) {
+            $distancias = $tramo['annotation']['distance'] ?? [];
+            $velocidades = $tramo['annotation']['speed'] ?? [];
+            $duraciones = $tramo['annotation']['duration'] ?? [];
+
+            foreach ($distancias as $indice => $distanciaMetros) {
+                $velocidadPermitidaMetrosPorSegundo = $velocidades[$indice] ?? 0;
+
+                if ($velocidadPermitidaMetrosPorSegundo <= 0) {
+                    $segundos += $duraciones[$indice] ?? 0;
+
+                    continue;
+                }
+
+                $velocidadEmergenciaKmh = ($velocidadPermitidaMetrosPorSegundo * 3.6) + $this->velocidadExtraKmh;
+                $velocidadEmergenciaMetrosPorSegundo = $velocidadEmergenciaKmh / 3.6;
+
+                $segundos += $distanciaMetros / $velocidadEmergenciaMetrosPorSegundo;
+            }
+        }
+
+        return (int) round($segundos);
     }
 }
