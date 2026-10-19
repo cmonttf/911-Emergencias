@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AmpliarEstacionamientoForm from '@/Components/AmpliarEstacionamientoForm.vue';
 import CompraVehiculoForm from '@/Components/CompraVehiculoForm.vue';
 import MapaJuego from '@/Components/MapaJuego.vue';
+import MisionActivaCard from '@/Components/MisionActivaCard.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -117,8 +118,20 @@ useCanalJugador({
             </div>
         </template>
 
-        <div class="mx-auto max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid lg:grid-cols-3 lg:px-8">
-            <div class="h-[60vh] overflow-hidden rounded-lg border border-gray-200 lg:col-span-2 lg:h-[75vh]">
+        <div class="mx-auto max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid lg:grid-cols-4 lg:px-8">
+            <section class="space-y-3 lg:col-span-1" aria-labelledby="misiones-activas-titulo">
+                <h3 id="misiones-activas-titulo" class="text-base font-semibold text-gray-900">
+                    Misiones activas
+                </h3>
+
+                <p v-if="misiones.length === 0" class="text-sm text-gray-500">
+                    No hay misiones activas por ahora.
+                </p>
+
+                <MisionActivaCard v-for="mision in misiones" :key="mision.id" :mision="mision" />
+            </section>
+
+            <div class="mt-6 h-[60vh] overflow-hidden rounded-lg border border-gray-200 lg:col-span-2 lg:mt-0 lg:h-[75vh]">
                 <MapaJuego
                     :edificios="edificios"
                     :misiones="misiones"
@@ -130,7 +143,7 @@ useCanalJugador({
                 />
             </div>
 
-            <div class="mt-4 lg:col-span-2 lg:order-last">
+            <div class="mt-4 lg:order-last lg:col-span-4">
                 <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Referencia de colores del mapa">
                     <li class="flex items-center gap-1.5">
                         <span class="h-2.5 w-2.5 rounded-full bg-[#b91c1c]" aria-hidden="true" /> Edificio
@@ -153,7 +166,7 @@ useCanalJugador({
                 </ul>
             </div>
 
-            <div class="mt-6 space-y-6 lg:mt-0">
+            <div class="mt-6 space-y-6 lg:col-span-1 lg:mt-0">
                 <section
                     class="rounded-lg border border-gray-200 bg-white p-4"
                     aria-labelledby="construir-titulo"

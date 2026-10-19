@@ -1,10 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import DespacharUnidadesForm from '@/Components/DespacharUnidadesForm.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
 import EstadoVehiculoBadge from '@/Components/EstadoVehiculoBadge.vue';
 import ProgresoMision from '@/Components/ProgresoMision.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -48,23 +49,11 @@ function despachoDe(vehiculoId) {
     return props.mision.despachos.find((despacho) => despacho.vehiculo_id === vehiculoId);
 }
 
-const formularioDespacho = useForm({ mision_id: props.mision.id, vehiculo_id: null });
-
-function despachar(vehiculoId) {
-    formularioDespacho.vehiculo_id = vehiculoId;
-    formularioDespacho.post(route('despachos.store'), { preserveScroll: true });
-}
-
 function cancelar(vehiculoId) {
     const despacho = despachoDe(vehiculoId);
     if (despacho) {
         router.delete(route('despachos.destroy', despacho.id), { preserveScroll: true });
     }
-}
-
-function formatearDuracion(segundos) {
-    const minutos = Math.round(segundos / 60);
-    return minutos <= 1 ? '< 1 min' : `${minutos} min`;
 }
 </script>
 
@@ -160,37 +149,7 @@ function formatearDuracion(segundos) {
                     Unidades disponibles
                 </h3>
 
-                <p v-if="unidadesDisponibles.length === 0" class="mt-2 text-sm text-gray-500">
-                    No tienes unidades disponibles en este momento.
-                </p>
-
-                <ul v-else class="mt-2 divide-y divide-gray-100 text-sm text-gray-700">
-                    <li
-                        v-for="unidad in unidadesDisponibles"
-                        :key="unidad.vehiculo.id"
-                        class="flex items-center justify-between py-2"
-                    >
-                        <span>
-                            {{ unidad.vehiculo.tipo_vehiculo.nombre }}
-                            <span v-if="unidad.vehiculo.estado === 'regresando'" class="text-gray-400">
-                                (regresando a su cuartel, se redirige desde donde está)
-                            </span>
-                            <span class="text-gray-400">· llega en {{ formatearDuracion(unidad.duracionSegundos) }}</span>
-                        </span>
-                        <button
-                            type="button"
-                            :disabled="formularioDespacho.processing"
-                            class="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-                            @click="despachar(unidad.vehiculo.id)"
-                        >
-                            Despachar
-                        </button>
-                    </li>
-                </ul>
-
-                <p v-if="formularioDespacho.errors.vehiculo_id" class="mt-2 text-sm text-red-600">
-                    {{ formularioDespacho.errors.vehiculo_id }}
-                </p>
+                <DespacharUnidadesForm class="mt-2" :mision-id="mision.id" :unidades-disponibles="unidadesDisponibles" />
             </section>
         </div>
     </AuthenticatedLayout>

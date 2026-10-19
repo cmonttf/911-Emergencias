@@ -8,9 +8,12 @@ use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Models\TipoVehiculo;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Infraestructura\Models\TipoEdificio;
+use App\Dominio\Misiones\Actions\CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
+use App\Dominio\Misiones\Models\Mision;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,16 +24,13 @@ use Inertia\Response;
  */
 class JuegoController extends Controller
 {
-    public function mapa(Request $request): Response
+    public function mapa(Request $request, CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction $calcularUnidadesDisponibles): Response
     {
         $jugador = $request->user();
 
         return Inertia::render('Juego/Mapa', [
             'edificios' => $jugador->edificios()->with('tipoEdificio', 'vehiculos.tipoVehiculo')->get(),
-            'misiones' => $jugador->misiones()
-                ->whereIn('estado', [EstadoMision::Generada, EstadoMision::EnAtencion])
-                ->with('tipoMision')
-                ->get(),
+            'misiones' => $this->misionesActivas($jugador, $calcularUnidadesDisponibles),
             'vehiculosEnMovimiento' => $this->vehiculosEnMovimiento($jugador),
             'unidadesEnElLugar' => $this->unidadesEnElLugar($jugador),
             'tiposEdificio' => TipoEdificio::query()->get(),
@@ -39,6 +39,29 @@ class JuegoController extends Controller
             'estacionamientosMaximos' => config('juego.estacionamientos_maximos'),
             'costoAmpliacionEstacionamiento' => config('juego.costo_ampliacion_estacionamiento'),
         ]);
+    }
+
+    /**
+     * Misiones generadas o en atención del jugador, con las unidades
+     * disponibles para despacharlas directamente desde el mapa (sin pasar
+     * por su detalle).
+     *
+     * @return Collection<int, Mision>
+     */
+    private function misionesActivas(User $jugador, CalcularUnidadesDisponiblesOrdenadasPorLlegadaAction $calcularUnidadesDisponibles)
+    {
+        return $jugador->misiones()
+            ->whereIn('estado', [EstadoMision::Generada, EstadoMision::EnAtencion])
+            ->with('tipoMision.requisitos.tipoVehiculo')
+            ->get()
+            ->each(function (Mision $mision) use ($calcularUnidadesDisponibles) {
+                $mision->unidadesDisponibles = collect($calcularUnidadesDisponibles->ejecutar($mision))
+                    ->map(fn (array $item) => [
+                        'vehiculo' => $item['vehiculo'],
+                        'duracionSegundos' => $item['duracionSegundos'],
+                    ])
+                    ->values();
+            });
     }
 
     /**
