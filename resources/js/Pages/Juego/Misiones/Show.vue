@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
+import ProgresoMision from '@/Components/ProgresoMision.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -83,6 +84,15 @@ function formatearDuracion(segundos) {
             <section class="rounded-lg border border-gray-200 bg-white p-4">
                 <p class="text-sm text-gray-600">{{ mision.tipo_mision.descripcion }}</p>
                 <p class="mt-2 text-sm font-medium text-gray-900">{{ mision.direccion }}</p>
+
+                <ProgresoMision
+                    class="mt-4"
+                    :estado="mision.estado"
+                    :creada-en="mision.created_at"
+                    :vence-en="mision.vence_en"
+                    :resuelve-en="mision.resuelve_en"
+                    :actualizada-en="mision.updated_at"
+                />
             </section>
 
             <section

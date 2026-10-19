@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
+import ProgresoMision from '@/Components/ProgresoMision.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, Link, router } from '@inertiajs/vue3';
 
@@ -64,11 +65,19 @@ useCanalJugador({
                         :href="route('misiones.show', mision.id)"
                         class="flex items-center justify-between gap-4 px-4 py-3 hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50"
                     >
-                        <div>
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-gray-900">
                                 {{ mision.tipo_mision.nombre }}
                             </p>
                             <p class="text-sm text-gray-500">{{ mision.direccion }}</p>
+                            <ProgresoMision
+                                class="mt-2 max-w-xs"
+                                :estado="mision.estado"
+                                :creada-en="mision.created_at"
+                                :vence-en="mision.vence_en"
+                                :resuelve-en="mision.resuelve_en"
+                                :actualizada-en="mision.updated_at"
+                            />
                         </div>
                         <EstadoMisionBadge :estado="mision.estado" />
                     </Link>
