@@ -30,6 +30,13 @@ class ImportarPuntosInteresCommand extends Command
         'comercio' => 'supermercado',
         'equipamiento' => 'colegio',
         'industria' => 'fábrica',
+        // Para que un incendio forestal (tipos_mision.categoria_punto_interes)
+        // caiga en un lugar con vegetación real y no, por ejemplo, un
+        // supermercado. Nominatim solo indexa lugares con nombre propio, así
+        // que la cobertura depende de qué parques/áreas verdes estén
+        // nombrados en OSM para cada comuna (ver alternativa con Overpass
+        // API si hace falta más cobertura).
+        'vegetacion' => 'parque',
     ];
 
     public function handle(NominatimClient $nominatim): int

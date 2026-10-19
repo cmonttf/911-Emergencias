@@ -242,9 +242,19 @@ php artisan puntos-interes:importar "Concepción"
 ```
 
 Consulta el Nominatim autoalojado por categorías (vivienda, comercio,
-equipamiento, industria) dentro de la comuna indicada y guarda direcciones
-reales en `puntos_interes`, que `GenerarMisionesJob` usa como ubicación de
-las misiones nuevas.
+equipamiento, industria, vegetación) dentro de la comuna indicada y guarda
+direcciones reales en `puntos_interes`, que `GenerarMisionesJob` usa como
+ubicación de las misiones nuevas.
+
+Un tipo de misión puede exigir una categoría concreta de punto de interés
+(`tipos_mision.categoria_punto_interes`): hoy solo "Incendio forestal" la
+usa, para no caer en un supermercado o una vivienda en vez de un lugar con
+vegetación real. La categoría "vegetación" busca "parque" en Nominatim, que
+solo indexa lugares con nombre propio en OSM, así que su cobertura depende
+de qué parques/áreas verdes estén nombrados para cada comuna — una
+alternativa con más cobertura (pero que suma una dependencia nueva) sería
+consultar directamente Overpass API por polígonos `natural=wood`,
+`landuse=forest` o `natural=scrub`, tengan nombre o no.
 
 ## Checklist de la especificación (Fase 1)
 

@@ -66,10 +66,17 @@ class GenerarMisionesJob implements ShouldQueue
             return;
         }
 
-        $puntoInteres = PuntoInteres::query()
-            ->dentroDelRadio($edificio->puntoGeografico(), config('juego.radio_generacion_mision_metros'))
-            ->inRandomOrder()
-            ->first();
+        $puntosInteresCercanos = PuntoInteres::query()
+            ->dentroDelRadio($edificio->puntoGeografico(), config('juego.radio_generacion_mision_metros'));
+
+        if ($tipoMision->categoria_punto_interes) {
+            // P. ej. un incendio forestal solo puede caer en un punto de
+            // interés categorizado como vegetación, no en cualquier
+            // dirección dentro del radio.
+            $puntosInteresCercanos->where('categoria', $tipoMision->categoria_punto_interes);
+        }
+
+        $puntoInteres = $puntosInteresCercanos->inRandomOrder()->first();
 
         if (! $puntoInteres) {
             return;

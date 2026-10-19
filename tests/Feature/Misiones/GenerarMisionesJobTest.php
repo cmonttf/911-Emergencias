@@ -146,3 +146,62 @@ test('a player with at least the minimum buildings can get missions with special
     expect(Mision::count())->toBe(1);
     expect(Mision::first()->tipo_mision_id)->toBe($tipoEspecial->id);
 });
+
+test('only picks a point of interest matching the mission types required category', function () {
+    config(['juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    TipoMision::factory()->create(['categoria_punto_interes' => 'vegetacion']);
+    $puntoVegetacion = PuntoInteres::factory()->create([
+        'categoria' => 'vegetacion',
+        'latitud' => -36.8271,
+        'longitud' => -73.0499,
+    ]);
+    PuntoInteres::factory()->create([
+        'categoria' => 'comercio',
+        'latitud' => -36.8272,
+        'longitud' => -73.0500,
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(1);
+    $mision = Mision::first();
+    expect((float) $mision->latitud)->toBe((float) $puntoVegetacion->latitud)
+        ->and((float) $mision->longitud)->toBe((float) $puntoVegetacion->longitud);
+});
+
+test('does not generate a mission when no point of interest matches the required category', function () {
+    config(['juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    TipoMision::factory()->create(['categoria_punto_interes' => 'vegetacion']);
+    PuntoInteres::factory()->create([
+        'categoria' => 'comercio',
+        'latitud' => -36.8271,
+        'longitud' => -73.0499,
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(0);
+});
+
+test('a mission type without a required category can use any point of interest', function () {
+    config(['juego.radio_generacion_mision_metros' => 5000]);
+
+    $jugador = User::factory()->create();
+    Edificio::factory()->for($jugador, 'jugador')->create(['latitud' => -36.8270, 'longitud' => -73.0498]);
+    TipoMision::factory()->create(['categoria_punto_interes' => null]);
+    PuntoInteres::factory()->create([
+        'categoria' => 'comercio',
+        'latitud' => -36.8271,
+        'longitud' => -73.0499,
+    ]);
+
+    (new GenerarMisionesJob)->handle();
+
+    expect(Mision::count())->toBe(1);
+});
