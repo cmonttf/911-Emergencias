@@ -5,6 +5,7 @@ namespace App\Dominio\Misiones\Jobs;
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
+use App\Dominio\Misiones\Actions\RegistrarLlegadaUnidadSolicitadaAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Models\Despacho;
 use App\Dominio\Misiones\Models\Mision;
@@ -23,7 +24,7 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
 {
     use Queueable;
 
-    public function handle(): void
+    public function handle(RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada): void
     {
         $this->despachosConLlegadaVencida()->each(
             fn (Despacho $despacho) => ProcesarLlegadaVehiculoJob::dispatch($despacho->id)
@@ -40,6 +41,22 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
         $this->misionesConResolucionVencida()->each(
             fn (Mision $mision) => ResolverMisionJob::dispatch($mision->id)
         );
+
+        // Una unidad ya puede estar "en el lugar" sin que su misión se haya
+        // actualizado (p. ej. el worker se cayó justo entre ambos pasos):
+        // sin esto, esa misión quedaría atascada para siempre, cubierta
+        // pero sin resuelve_en ni ResolverMisionJob agendado.
+        $this->misionesConUnidadSolicitadaSinProcesar($registrarLlegada);
+    }
+
+    private function misionesConUnidadSolicitadaSinProcesar(RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada): void
+    {
+        Mision::query()
+            ->where('estado', EstadoMision::Generada)
+            ->whereNull('resuelve_en')
+            ->get()
+            ->filter(fn (Mision $mision) => $mision->tieneAlgunaUnidadSolicitadaPresente())
+            ->each(fn (Mision $mision) => $registrarLlegada->ejecutar($mision, cubiertaAntes: false));
     }
 
     /**

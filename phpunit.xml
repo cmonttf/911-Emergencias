@@ -30,6 +30,10 @@
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <!-- Varias pruebas de OSRM reproducen duraciones exactas a partir de
+             esta velocidad extra; fijarla aquí las aísla de cualquier valor
+             que tenga el .env local del desarrollador. -->
+        <env name="JUEGO_OSRM_VELOCIDAD_EXTRA_KMH" value="10"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

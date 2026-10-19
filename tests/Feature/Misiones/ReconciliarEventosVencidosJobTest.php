@@ -4,6 +4,7 @@ use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Infraestructura\Models\Edificio;
+use App\Dominio\Misiones\Actions\RegistrarLlegadaUnidadSolicitadaAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Jobs\ProcesarLlegadaVehiculoJob;
 use App\Dominio\Misiones\Jobs\ReconciliarEventosVencidosJob;
@@ -11,6 +12,8 @@ use App\Dominio\Misiones\Jobs\ResolverMisionJob;
 use App\Dominio\Misiones\Jobs\VencerMisionJob;
 use App\Dominio\Misiones\Models\Despacho;
 use App\Dominio\Misiones\Models\Mision;
+use App\Dominio\Misiones\Models\RequisitoTipoMision;
+use App\Dominio\Misiones\Models\TipoMision;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -24,7 +27,7 @@ test('re-dispatches arrival for an overdue dispatch still en route', function ()
         'llegada_en' => now()->subMinute(),
     ]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
 
     Queue::assertPushed(ProcesarLlegadaVehiculoJob::class, fn ($job) => $job->despachoId === $despacho->id);
 });
@@ -36,7 +39,7 @@ test('does not re-dispatch a cancelled or already-arrived dispatch', function ()
         'llegada_en' => now()->subMinute(),
     ]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
 
     Queue::assertNotPushed(ProcesarLlegadaVehiculoJob::class);
 });
@@ -48,7 +51,7 @@ test('re-dispatches the return job for an overdue returning vehicle', function (
         'regresa_en' => now()->subMinute(),
     ]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
 
     Queue::assertPushed(ProcesarRegresoVehiculoJob::class, fn ($job) => $job->vehiculoId === $vehiculo->id);
 });
@@ -59,7 +62,7 @@ test('re-dispatches expiry for an overdue mission', function () {
         'vence_en' => now()->subMinute(),
     ]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
 
     Queue::assertPushed(VencerMisionJob::class, fn ($job) => $job->misionId === $mision->id);
 });
@@ -71,7 +74,30 @@ test('re-dispatches resolution for an overdue en-atencion mission', function () 
         'resuelve_en' => now()->subMinute(),
     ]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
+
+    Queue::assertPushed(ResolverMisionJob::class, fn ($job) => $job->misionId === $mision->id);
+});
+
+test('fixes a mission stuck generada whose unit is already on scene but was never processed', function () {
+    $edificio = Edificio::factory()->create();
+    $vehiculo = Vehiculo::factory()->for($edificio)->create(['estado' => EstadoVehiculo::EnElLugar]);
+    $tipoMision = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoMision)->create([
+        'tipo_vehiculo_id' => $vehiculo->tipo_vehiculo_id,
+        'cantidad' => 1,
+    ]);
+    // Simula un ProcesarLlegadaVehiculoJob que se cayó justo después de
+    // pasar el vehículo a "en el lugar" pero antes de actualizar la misión:
+    // queda cubierta pero sin resuelve_en ni ResolverMisionJob agendado.
+    $mision = Mision::factory()->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
+    $vehiculo->update(['mision_id' => $mision->id]);
+
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
+
+    $mision->refresh();
+    expect($mision->estado)->toBe(EstadoMision::EnAtencion)
+        ->and($mision->resuelve_en)->not->toBeNull();
 
     Queue::assertPushed(ResolverMisionJob::class, fn ($job) => $job->misionId === $mision->id);
 });
@@ -80,7 +106,7 @@ test('does not touch missions and vehicles that are not overdue', function () {
     Mision::factory()->create(['estado' => EstadoMision::Generada, 'vence_en' => now()->addMinutes(10)]);
     Vehiculo::factory()->create(['estado' => EstadoVehiculo::Disponible]);
 
-    (new ReconciliarEventosVencidosJob)->handle();
+    (new ReconciliarEventosVencidosJob)->handle(app(RegistrarLlegadaUnidadSolicitadaAction::class));
 
     Queue::assertNotPushed(VencerMisionJob::class);
     Queue::assertNotPushed(ProcesarRegresoVehiculoJob::class);
