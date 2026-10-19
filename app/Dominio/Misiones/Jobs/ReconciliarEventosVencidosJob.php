@@ -12,6 +12,7 @@ use App\Dominio\Misiones\Models\Mision;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Corre cada 5 minutos desde el scheduler y corrige vehículos o misiones
@@ -51,12 +52,25 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
 
     private function misionesConUnidadSolicitadaSinProcesar(RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada): void
     {
-        Mision::query()
+        $misionIds = Mision::query()
             ->where('estado', EstadoMision::Generada)
             ->whereNull('resuelve_en')
             ->get()
             ->filter(fn (Mision $mision) => $mision->tieneAlgunaUnidadSolicitadaPresente())
-            ->each(fn (Mision $mision) => $registrarLlegada->ejecutar($mision, cubiertaAntes: false));
+            ->pluck('id');
+
+        foreach ($misionIds as $misionId) {
+            // Bloqueo de fila (RNF-05), igual que cualquier otra actualización
+            // de una misión: sin esto, esta reconciliación podría pisar una
+            // actualización concurrente de ProcesarLlegadaVehiculoJob.
+            DB::transaction(function () use ($misionId, $registrarLlegada) {
+                $mision = Mision::query()->whereKey($misionId)->lockForUpdate()->first();
+
+                if ($mision) {
+                    $registrarLlegada->ejecutar($mision, cubiertaAntes: false);
+                }
+            });
+        }
     }
 
     /**

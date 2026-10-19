@@ -201,7 +201,11 @@ function animar() {
         }
     }
 
-    mapa.getSource(RUTA_VEHICULOS_ID)?.setData({ type: 'FeatureCollection', features: tramosPendientes });
+    try {
+        mapa.getSource(RUTA_VEHICULOS_ID)?.setData({ type: 'FeatureCollection', features: tramosPendientes });
+    } catch (error) {
+        console.error('No se pudo redibujar la ruta pendiente de los vehículos.', error);
+    }
 
     cuadroAnimacion = requestAnimationFrame(animar);
 }
@@ -236,14 +240,22 @@ onMounted(() => {
     });
 
     mapa.on('load', () => {
-        mapa.addSource(RUTA_VEHICULOS_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        mapa.addLayer({
-            id: RUTA_VEHICULOS_ID,
-            type: 'line',
-            source: RUTA_VEHICULOS_ID,
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#0ea5e9', 'line-width': 3, 'line-opacity': 0.7 },
-        });
+        // Si este callback llegara a correr dos veces para el mismo mapa
+        // (p. ej. un recarga en caliente de Vite durante desarrollo),
+        // addSource lanzaría "Source already exists" y cortaría en seco
+        // todo lo que sigue, dejando el mapa entero sin dibujar nada
+        // (ni edificios ni misiones, no solo las rutas). Comprobar primero
+        // lo vuelve idempotente.
+        if (!mapa.getSource(RUTA_VEHICULOS_ID)) {
+            mapa.addSource(RUTA_VEHICULOS_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+            mapa.addLayer({
+                id: RUTA_VEHICULOS_ID,
+                type: 'line',
+                source: RUTA_VEHICULOS_ID,
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: { 'line-color': '#0ea5e9', 'line-width': 3, 'line-opacity': 0.7 },
+            });
+        }
 
         dibujarEdificios();
         dibujarMisiones();
