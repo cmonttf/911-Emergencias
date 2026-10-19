@@ -146,22 +146,29 @@ class Mision extends Model
     }
 
     /**
-     * Tiempo de resolución ajustado por cuántas unidades están presentes
-     * respecto a las que exige el tipo de misión (RF-24): el doble de
-     * unidades requeridas la resuelve en la mitad de tiempo, el triple en
-     * un tercio, etc., hasta el tope configurado para que no se vuelva
-     * instantánea por mandar unidades de más.
+     * Tiempo de resolución (RF-24): un cronómetro fijo de 3 minutos
+     * (`juego.tiempo_resolucion_base_segundos`) igual para toda misión,
+     * que arranca apenas se cubren sus requisitos por primera vez. Cada
+     * unidad de más que llega, de uno de los tipos que la misión pide,
+     * descuenta `juego.descuento_tiempo_resolucion_por_unidad_segundos` al
+     * tiempo restante, hasta el piso configurado para que nunca se
+     * resuelva al instante.
      */
     public function calcularTiempoResolucionSegundos(): int
     {
-        $tipoMision = $this->tipoMision;
-        $totalRequerido = $tipoMision->requisitos->sum('cantidad');
-        $totalPresentes = $this->vehiculosPresentes()->count();
+        $tipoVehiculoIdsSolicitados = $this->tipoMision->requisitos->pluck('tipo_vehiculo_id');
+        $totalRequerido = $this->tipoMision->requisitos->sum('cantidad');
 
-        $factorUnidades = $totalRequerido > 0 ? max(1.0, $totalPresentes / $totalRequerido) : 1.0;
-        $factorUnidades = min($factorUnidades, config('juego.factor_maximo_reduccion_tiempo_resolucion'));
+        $totalPresentesSolicitados = $this->vehiculosPresentes()
+            ->whereIn('tipo_vehiculo_id', $tipoVehiculoIdsSolicitados)
+            ->count();
 
-        return (int) round($tipoMision->tiempo_resolucion_segundos / $factorUnidades);
+        $unidadesExtra = max(0, $totalPresentesSolicitados - $totalRequerido);
+
+        $segundos = config('juego.tiempo_resolucion_base_segundos')
+            - ($unidadesExtra * config('juego.descuento_tiempo_resolucion_por_unidad_segundos'));
+
+        return max(config('juego.tiempo_resolucion_minimo_segundos'), $segundos);
     }
 
     /**

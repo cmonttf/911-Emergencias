@@ -53,7 +53,6 @@ class TipoMisionSeeder extends Seeder
      *     creditos_min: int,
      *     creditos_max: int,
      *     tiempo_limite_segundos: int,
-     *     tiempo_resolucion_segundos: int,
      *     requisitos: array<string, int>,
      * }>
      */
@@ -67,7 +66,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 250,
                 'creditos_max' => 300,
                 'tiempo_limite_segundos' => 600,
-                'tiempo_resolucion_segundos' => 90,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 1],
             ],
             [
@@ -77,7 +75,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 300,
                 'creditos_max' => 380,
                 'tiempo_limite_segundos' => 900,
-                'tiempo_resolucion_segundos' => 240,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 2, EspecialidadVehiculo::Mando->value => 1],
             ],
             [
@@ -87,7 +84,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 350,
                 'creditos_max' => 420,
                 'tiempo_limite_segundos' => 900,
-                'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::Escala->value => 1, EspecialidadVehiculo::Agua->value => 1],
             ],
             [
@@ -97,7 +93,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 300,
                 'creditos_max' => 380,
                 'tiempo_limite_segundos' => 1200,
-                'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::Agua->value => 2],
             ],
             [
@@ -107,7 +102,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 280,
                 'creditos_max' => 350,
                 'tiempo_limite_segundos' => 600,
-                'tiempo_resolucion_segundos' => 180,
                 'requisitos' => [EspecialidadVehiculo::Rescate->value => 1],
             ],
             [
@@ -117,7 +111,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 380,
                 'creditos_max' => 460,
                 'tiempo_limite_segundos' => 1200,
-                'tiempo_resolucion_segundos' => 360,
                 'requisitos' => [EspecialidadVehiculo::Rescate->value => 1, EspecialidadVehiculo::Mando->value => 1],
             ],
             [
@@ -127,7 +120,6 @@ class TipoMisionSeeder extends Seeder
                 'creditos_min' => 400,
                 'creditos_max' => 500,
                 'tiempo_limite_segundos' => 900,
-                'tiempo_resolucion_segundos' => 300,
                 'requisitos' => [EspecialidadVehiculo::MaterialesPeligrosos->value => 1, EspecialidadVehiculo::Mando->value => 1],
             ],
         ];

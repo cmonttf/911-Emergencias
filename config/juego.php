@@ -67,12 +67,16 @@ return [
     'recompensa_mision_maxima' => (int) env('JUEGO_RECOMPENSA_MISION_MAXIMA', 500),
 
     /*
-    | Cuántas veces más rápido puede resolverse una misión, como máximo, por
-    | enviarle más unidades de las que exige (Mision::calcularTiempoResolucionSegundos()).
-    | Sin este tope, mandar muchas unidades de más la resolvería casi al
-    | instante.
+    | Tiempo de resolución (RF-24): apenas una misión cubre sus requisitos
+    | por primera vez, arranca este cronómetro fijo de 3 minutos para
+    | todas las misiones por igual. Cada unidad de más que llega, del tipo
+    | que la misión pide, descuenta un tramo fijo de segundos al tiempo que
+    | falta, hasta un piso mínimo para que nunca se resuelva al instante.
+    | Ver Mision::calcularTiempoResolucionSegundos().
     */
-    'factor_maximo_reduccion_tiempo_resolucion' => (float) env('JUEGO_FACTOR_MAXIMO_REDUCCION_TIEMPO_RESOLUCION', 3),
+    'tiempo_resolucion_base_segundos' => (int) env('JUEGO_TIEMPO_RESOLUCION_BASE_SEGUNDOS', 180),
+    'descuento_tiempo_resolucion_por_unidad_segundos' => (int) env('JUEGO_DESCUENTO_TIEMPO_RESOLUCION_POR_UNIDAD_SEGUNDOS', 20),
+    'tiempo_resolucion_minimo_segundos' => (int) env('JUEGO_TIEMPO_RESOLUCION_MINIMO_SEGUNDOS', 30),
 
     /*
     |--------------------------------------------------------------------------

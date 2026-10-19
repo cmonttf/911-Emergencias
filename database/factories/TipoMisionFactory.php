@@ -27,7 +27,6 @@ class TipoMisionFactory extends Factory
             'creditos_min' => 250,
             'creditos_max' => 300,
             'tiempo_limite_segundos' => 600,
-            'tiempo_resolucion_segundos' => 120,
         ];
     }
 }

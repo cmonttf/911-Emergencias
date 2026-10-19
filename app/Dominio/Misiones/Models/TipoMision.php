@@ -28,7 +28,6 @@ class TipoMision extends Model
         'creditos_min',
         'creditos_max',
         'tiempo_limite_segundos',
-        'tiempo_resolucion_segundos',
     ];
 
     /**
