@@ -5,6 +5,7 @@ namespace App\Dominio\Misiones\Jobs;
 use App\Dominio\Flota\Enums\EstadoVehiculo;
 use App\Dominio\Flota\Jobs\ProcesarRegresoVehiculoJob;
 use App\Dominio\Flota\Models\Vehiculo;
+use App\Dominio\Misiones\Actions\RecallarUnidadesAsignadasAction;
 use App\Dominio\Misiones\Actions\RegistrarLlegadaUnidadSolicitadaAction;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Models\Despacho;
@@ -25,8 +26,10 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
 {
     use Queueable;
 
-    public function handle(RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada): void
-    {
+    public function handle(
+        RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada,
+        RecallarUnidadesAsignadasAction $recallarUnidades,
+    ): void {
         $this->despachosConLlegadaVencida()->each(
             fn (Despacho $despacho) => ProcesarLlegadaVehiculoJob::dispatch($despacho->id)
         );
@@ -48,6 +51,15 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
         // sin esto, esa misión quedaría atascada para siempre, cubierta
         // pero sin resuelve_en ni ResolverMisionJob agendado.
         $this->misionesConUnidadSolicitadaSinProcesar($registrarLlegada);
+
+        // Una misión ya terminada puede tener todavía alguna unidad en
+        // camino o en el lugar si OSRM falló justo al recallarla
+        // (RecallarUnidadesAsignadasAction aísla cada unidad, pero igual
+        // puede quedar alguna sin volver). Sin esto, esa unidad nunca
+        // volvería a estar disponible.
+        $this->misionesTerminadasConUnidadesSinRecallar()->each(
+            fn (Mision $mision) => $recallarUnidades->ejecutar($mision)
+        );
     }
 
     private function misionesConUnidadSolicitadaSinProcesar(RegistrarLlegadaUnidadSolicitadaAction $registrarLlegada): void
@@ -71,6 +83,20 @@ class ReconciliarEventosVencidosJob implements ShouldQueue
                 }
             });
         }
+    }
+
+    /**
+     * @return Collection<int, Mision>
+     */
+    private function misionesTerminadasConUnidadesSinRecallar()
+    {
+        return Mision::query()
+            ->whereIn('estado', [EstadoMision::Completada, EstadoMision::Fallida])
+            ->whereHas('vehiculosAsignados', fn ($consulta) => $consulta->whereIn(
+                'estado',
+                [EstadoVehiculo::EnRuta, EstadoVehiculo::EnElLugar]
+            ))
+            ->get();
     }
 
     /**
