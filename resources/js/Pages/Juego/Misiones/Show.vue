@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import EstadoMisionBadge from '@/Components/EstadoMisionBadge.vue';
+import EstadoVehiculoBadge from '@/Components/EstadoVehiculoBadge.vue';
 import ProgresoMision from '@/Components/ProgresoMision.vue';
 import { useCanalJugador } from '@/composables/useCanalJugador';
 import { Head, router, useForm } from '@inertiajs/vue3';
@@ -119,8 +120,9 @@ function formatearDuracion(segundos) {
                     Unidades presentes
                 </h3>
                 <ul class="mt-2 divide-y divide-gray-100 text-sm text-gray-700">
-                    <li v-for="vehiculo in unidadesPresentes" :key="vehiculo.id" class="py-2">
+                    <li v-for="vehiculo in unidadesPresentes" :key="vehiculo.id" class="flex items-center justify-between py-2">
                         {{ vehiculo.tipo_vehiculo.nombre }}
+                        <EstadoVehiculoBadge :estado="vehiculo.estado" />
                     </li>
                 </ul>
             </section>
@@ -134,8 +136,11 @@ function formatearDuracion(segundos) {
                     Unidades en camino
                 </h3>
                 <ul class="mt-2 divide-y divide-gray-100 text-sm text-gray-700">
-                    <li v-for="vehiculo in unidadesEnCamino" :key="vehiculo.id" class="flex items-center justify-between py-2">
-                        {{ vehiculo.tipo_vehiculo.nombre }}
+                    <li v-for="vehiculo in unidadesEnCamino" :key="vehiculo.id" class="flex items-center justify-between gap-2 py-2">
+                        <span class="flex items-center gap-2">
+                            {{ vehiculo.tipo_vehiculo.nombre }}
+                            <EstadoVehiculoBadge :estado="vehiculo.estado" />
+                        </span>
                         <button
                             type="button"
                             class="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"

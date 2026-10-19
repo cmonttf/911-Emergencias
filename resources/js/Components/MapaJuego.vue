@@ -34,6 +34,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    unidadesEnElLugar: {
+        type: Array,
+        default: () => [],
+    },
     puntoPendiente: {
         type: Object,
         default: null,
@@ -60,6 +64,7 @@ let cuadroAnimacion = null;
 const marcadoresEdificio = [];
 const marcadoresMision = [];
 const marcadoresVehiculo = new Map();
+const marcadoresUnidadEnElLugar = [];
 
 function estiloMapa() {
     const clave = import.meta.env.VITE_MAPTILER_KEY;
@@ -99,6 +104,24 @@ function dibujarMisiones() {
             .addTo(mapa);
 
         marcadoresMision.push(marcador);
+    });
+}
+
+/**
+ * Unidades ya en el lugar de una misión, atendiéndola: no se mueven, así
+ * que se redibujan igual que los edificios o las misiones (sin
+ * interpolación ni animación).
+ */
+function dibujarUnidadesEnElLugar() {
+    marcadoresUnidadEnElLugar.splice(0).forEach((marcador) => marcador.remove());
+
+    props.unidadesEnElLugar.forEach((unidad) => {
+        const marcador = new Marker({ color: '#22c55e' })
+            .setLngLat([unidad.longitud, unidad.latitud])
+            .setPopup(new Popup().setText(`${unidad.tipoVehiculo} — en el lugar`))
+            .addTo(mapa);
+
+        marcadoresUnidadEnElLugar.push(marcador);
     });
 }
 
@@ -196,6 +219,7 @@ onMounted(() => {
         dibujarEdificios();
         dibujarMisiones();
         sincronizarMarcadoresVehiculo();
+        dibujarUnidadesEnElLugar();
         dibujarPuntoPendiente();
         cuadroAnimacion = requestAnimationFrame(animar);
     });
@@ -211,6 +235,7 @@ onBeforeUnmount(() => {
 watch(() => props.edificios, () => mapa?.loaded() && dibujarEdificios(), { deep: true });
 watch(() => props.misiones, () => mapa?.loaded() && dibujarMisiones(), { deep: true });
 watch(() => props.vehiculosEnMovimiento, () => mapa?.loaded() && sincronizarMarcadoresVehiculo(), { deep: true });
+watch(() => props.unidadesEnElLugar, () => mapa?.loaded() && dibujarUnidadesEnElLugar(), { deep: true });
 watch(() => props.puntoPendiente, () => mapa?.loaded() && dibujarPuntoPendiente());
 </script>
 
@@ -219,6 +244,6 @@ watch(() => props.puntoPendiente, () => mapa?.loaded() && dibujarPuntoPendiente(
         ref="contenedor"
         class="h-full w-full"
         role="application"
-        aria-label="Mapa de edificios, misiones y vehículos en movimiento. Usa los campos de latitud y longitud para una alternativa sin mapa."
+        aria-label="Mapa de edificios, misiones y vehículos en movimiento o en el lugar de una misión. Usa los campos de latitud y longitud para una alternativa sin mapa."
     />
 </template>

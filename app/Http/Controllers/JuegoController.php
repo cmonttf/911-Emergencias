@@ -32,6 +32,7 @@ class JuegoController extends Controller
                 ->with('tipoMision')
                 ->get(),
             'vehiculosEnMovimiento' => $this->vehiculosEnMovimiento($jugador),
+            'unidadesEnElLugar' => $this->unidadesEnElLugar($jugador),
             'tiposEdificio' => TipoEdificio::query()->get(),
             'tiposVehiculo' => TipoVehiculo::query()->get(),
             'saldoCreditos' => (new Billetera($jugador))->saldo(Moneda::Creditos),
@@ -68,6 +69,32 @@ class JuegoController extends Controller
                 ];
             })
             ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Vehículos del jugador ya en el lugar de una misión, atendiéndola: no
+     * se mueven (RNF-02 no transmite posiciones intermedias), así que basta
+     * con la ubicación de la misión en vez de un tramo para interpolar.
+     *
+     * @return list<array{id: int, tipoVehiculo: string, latitud: float, longitud: float}>
+     */
+    private function unidadesEnElLugar(User $jugador): array
+    {
+        return Vehiculo::query()
+            ->whereHas('edificio', fn ($consulta) => $consulta->where('jugador_id', $jugador->id))
+            ->where('estado', EstadoVehiculo::EnElLugar)
+            ->whereNotNull('mision_id')
+            ->with(['tipoVehiculo', 'mision'])
+            ->get()
+            ->filter(fn (Vehiculo $vehiculo) => $vehiculo->mision !== null)
+            ->map(fn (Vehiculo $vehiculo) => [
+                'id' => $vehiculo->id,
+                'tipoVehiculo' => $vehiculo->tipoVehiculo->nombre,
+                'latitud' => $vehiculo->mision->latitud,
+                'longitud' => $vehiculo->mision->longitud,
+            ])
             ->values()
             ->all();
     }

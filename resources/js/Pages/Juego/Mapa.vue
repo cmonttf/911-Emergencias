@@ -20,6 +20,10 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    unidadesEnElLugar: {
+        type: Array,
+        required: true,
+    },
     tiposEdificio: {
         type: Array,
         required: true,
@@ -82,7 +86,7 @@ function construir() {
 
 function refrescarEstadoDelJuego() {
     router.reload({
-        only: ['edificios', 'misiones', 'vehiculosEnMovimiento', 'saldoCreditos'],
+        only: ['edificios', 'misiones', 'vehiculosEnMovimiento', 'unidadesEnElLugar', 'saldoCreditos'],
         preserveScroll: true,
     });
 }
@@ -119,6 +123,7 @@ useCanalJugador({
                     :edificios="edificios"
                     :misiones="misiones"
                     :vehiculos-en-movimiento="vehiculosEnMovimiento"
+                    :unidades-en-el-lugar="unidadesEnElLugar"
                     :punto-pendiente="puntoPendiente"
                     editable
                     @click="alHacerClicEnMapa"
@@ -138,6 +143,9 @@ useCanalJugador({
                     </li>
                     <li class="flex items-center gap-1.5">
                         <span class="h-2.5 w-2.5 rounded-full bg-[#0ea5e9]" aria-hidden="true" /> Vehículo en movimiento
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#22c55e]" aria-hidden="true" /> Vehículo en el lugar
                     </li>
                 </ul>
             </div>
