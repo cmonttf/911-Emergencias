@@ -11,10 +11,15 @@ use App\Dominio\Misiones\Models\Mision;
 use App\Dominio\Misiones\Models\RequisitoTipoMision;
 use App\Dominio\Misiones\Models\TipoMision;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Queue::fake();
+});
+
+afterEach(function () {
+    Carbon::setTestNow();
 });
 
 function despachoEnRutaConRequisito(int $cantidadRequerida = 1): Despacho
@@ -50,15 +55,67 @@ test('marks the vehicle as on scene and moves the mission to en atencion when re
     Queue::assertPushed(ResolverMisionJob::class, fn ($job) => $job->misionId === $despacho->mision_id);
 });
 
-test('leaves the mission generada when requirements are still missing', function () {
+test('enters en atencion with extra time per missing unit when requirements are not fully met yet', function () {
+    config(['juego.tiempo_resolucion_base_segundos' => 180, 'juego.tiempo_extra_por_unidad_faltante_segundos' => 60]);
+    Carbon::setTestNow('2026-01-01 10:00:00');
+
+    // Pide 2 unidades del tipo, pero solo llega 1: falta 1.
     $despacho = despachoEnRutaConRequisito(cantidadRequerida: 2);
 
     (new ProcesarLlegadaVehiculoJob($despacho->id))->handle();
 
     $despacho->mision->refresh();
-    expect($despacho->mision->estado)->toBe(EstadoMision::Generada);
+    expect($despacho->mision->estado)->toBe(EstadoMision::EnAtencion)
+        // 180s base + 60s por la unidad que falta = 240s -> 10:04:00.
+        ->and($despacho->mision->resuelve_en->toDateTimeString())->toBe('2026-01-01 10:04:00');
 
-    Queue::assertNotPushed(ResolverMisionJob::class);
+    Queue::assertPushed(ResolverMisionJob::class, fn ($job) => $job->misionId === $despacho->mision_id);
+});
+
+test('cuts the remaining time by the configured percentage when the missing units finally arrive', function () {
+    config([
+        'juego.tiempo_resolucion_base_segundos' => 180,
+        'juego.tiempo_extra_por_unidad_faltante_segundos' => 60,
+        'juego.descuento_al_completar_cobertura' => 0.3,
+    ]);
+    Carbon::setTestNow('2026-01-01 10:00:00');
+
+    $jugador = User::factory()->create();
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->create();
+    $vehiculo1 = Vehiculo::factory()->for($edificio)->create(['estado' => EstadoVehiculo::EnRuta]);
+    $tipoMision = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoMision)->create([
+        'tipo_vehiculo_id' => $vehiculo1->tipo_vehiculo_id,
+        'cantidad' => 2,
+    ]);
+    $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
+    $vehiculo1->update(['mision_id' => $mision->id]);
+    $despacho1 = Despacho::factory()->for($mision)->for($vehiculo1)->create();
+
+    (new ProcesarLlegadaVehiculoJob($despacho1->id))->handle();
+
+    $mision->refresh();
+    // Falta 1 de 2: 180 + 60 = 240s -> resuelve a las 10:04:00.
+    expect($mision->resuelve_en->toDateTimeString())->toBe('2026-01-01 10:04:00');
+
+    // Pasan 100s reales (quedan 140 de los 240 originales) y llega la
+    // segunda unidad requerida, completando la cobertura por primera vez.
+    Carbon::setTestNow('2026-01-01 10:01:40');
+
+    $vehiculo2 = Vehiculo::factory()->for($edificio)->create([
+        'estado' => EstadoVehiculo::EnRuta,
+        'tipo_vehiculo_id' => $vehiculo1->tipo_vehiculo_id,
+        'mision_id' => $mision->id,
+    ]);
+    $despacho2 = Despacho::factory()->for($mision)->for($vehiculo2)->create();
+
+    (new ProcesarLlegadaVehiculoJob($despacho2->id))->handle();
+
+    $mision->refresh();
+    // Quedaban 140s; se recortan un 30% -> 98s desde las 10:01:40 -> 10:03:18.
+    expect($mision->resuelve_en->toDateTimeString())->toBe('2026-01-01 10:03:18');
+
+    Queue::assertPushed(ResolverMisionJob::class, 2);
 });
 
 test('is idempotent when run twice', function () {

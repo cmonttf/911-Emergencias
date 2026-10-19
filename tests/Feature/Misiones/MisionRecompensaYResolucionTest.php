@@ -125,3 +125,62 @@ test('extra units of a type the mission does not request do not count toward the
 
     expect($mision->calcularTiempoResolucionSegundos())->toBe(180);
 });
+
+test('resolution time adds a fixed extra per missing requested unit when not fully covered', function () {
+    config(['juego.tiempo_resolucion_base_segundos' => 180, 'juego.tiempo_extra_por_unidad_faltante_segundos' => 60]);
+    $tipoVehiculo = TipoVehiculo::factory()->create();
+    $tipoMision = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoMision)->create(['tipo_vehiculo_id' => $tipoVehiculo->id, 'cantidad' => 3]);
+    $edificio = Edificio::factory()->create();
+    $mision = Mision::factory()->for($tipoMision)->create();
+    // Pide 3, solo hay 1 presente: faltan 2 -> 180 + 2*60 = 300.
+    Vehiculo::factory()->for($edificio)->for($tipoVehiculo)->create([
+        'estado' => EstadoVehiculo::EnElLugar,
+        'mision_id' => $mision->id,
+    ]);
+
+    expect($mision->calcularTiempoResolucionSegundos())->toBe(300);
+});
+
+test('has no requested unit present when nothing arrived yet or only unrequested types did', function () {
+    $tipoVehiculoSolicitado = TipoVehiculo::factory()->create();
+    $tipoVehiculoAjeno = TipoVehiculo::factory()->create();
+    $tipoMision = TipoMision::factory()->create();
+    RequisitoTipoMision::factory()->for($tipoMision)->create(['tipo_vehiculo_id' => $tipoVehiculoSolicitado->id, 'cantidad' => 1]);
+    $edificio = Edificio::factory()->create();
+    $mision = Mision::factory()->for($tipoMision)->create();
+
+    expect($mision->tieneAlgunaUnidadSolicitadaPresente())->toBeFalse();
+
+    Vehiculo::factory()->for($edificio)->for($tipoVehiculoAjeno)->create([
+        'estado' => EstadoVehiculo::EnElLugar,
+        'mision_id' => $mision->id,
+    ]);
+
+    expect($mision->tieneAlgunaUnidadSolicitadaPresente())->toBeFalse();
+
+    Vehiculo::factory()->for($edificio)->for($tipoVehiculoSolicitado)->create([
+        'estado' => EstadoVehiculo::EnElLugar,
+        'mision_id' => $mision->id,
+    ]);
+
+    expect($mision->tieneAlgunaUnidadSolicitadaPresente())->toBeTrue();
+});
+
+test('cutting the remaining time on full coverage is floored at the configured minimum', function () {
+    config([
+        'juego.tiempo_resolucion_base_segundos' => 180,
+        'juego.descuento_al_completar_cobertura' => 0.99,
+        'juego.tiempo_resolucion_minimo_segundos' => 30,
+    ]);
+    Carbon::setTestNow('2026-01-01 10:00:00');
+
+    $tipoMision = TipoMision::factory()->create();
+    $mision = Mision::factory()->for($tipoMision)->create(['estado' => 'en_atencion', 'resuelve_en' => '2026-01-01 10:02:00']);
+
+    // Quedaban 120s; un recorte del 99% los dejaría en ~1s, muy por debajo
+    // del piso configurado.
+    $resuelveEn = $mision->calcularResuelveEnTrasLlegada(cubiertaAntes: false);
+
+    expect($resuelveEn->toDateTimeString())->toBe('2026-01-01 10:00:30');
+});

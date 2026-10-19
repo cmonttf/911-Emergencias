@@ -7,6 +7,7 @@ use App\Dominio\Flota\Models\TipoVehiculo;
 use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Geo\Concerns\TienePuntoGeografico;
 use App\Dominio\Misiones\Enums\EstadoMision;
+use App\Dominio\Misiones\Support\FactorVelocidadJuego;
 use App\Models\User;
 use Database\Factories\MisionFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -146,29 +148,73 @@ class Mision extends Model
     }
 
     /**
-     * Tiempo de resolución (RF-24): un cronómetro fijo de 3 minutos
-     * (`juego.tiempo_resolucion_base_segundos`) igual para toda misión,
-     * que arranca apenas se cubren sus requisitos por primera vez. Cada
-     * unidad de más que llega, de uno de los tipos que la misión pide,
-     * descuenta `juego.descuento_tiempo_resolucion_por_unidad_segundos` al
-     * tiempo restante, hasta el piso configurado para que nunca se
-     * resuelva al instante.
+     * Cuántas unidades presentes son de un tipo de vehículo que la misión
+     * pide, sin importar si alcanzan para cubrir sus requisitos. Las que no
+     * son de un tipo solicitado no cuentan para nada de lo siguiente.
+     */
+    private function totalPresentesSolicitados(): int
+    {
+        $tipoVehiculoIdsSolicitados = $this->tipoMision->requisitos->pluck('tipo_vehiculo_id');
+
+        return $this->vehiculosPresentes()
+            ->whereIn('tipo_vehiculo_id', $tipoVehiculoIdsSolicitados)
+            ->count();
+    }
+
+    /**
+     * Si ya llegó al menos una unidad de un tipo que la misión pide, cubra
+     * o no todos sus requisitos todavía (RF-24): el cronómetro de
+     * resolución arranca con la primera, no hay que esperar a que estén
+     * todas.
+     */
+    public function tieneAlgunaUnidadSolicitadaPresente(): bool
+    {
+        return $this->totalPresentesSolicitados() > 0;
+    }
+
+    /**
+     * Tiempo de resolución (RF-24) para el estado actual de la misión: un
+     * cronómetro fijo de 3 minutos (`juego.tiempo_resolucion_base_segundos`)
+     * igual para toda misión. Mientras siga faltando alguna unidad
+     * solicitada, se suma un extra por cada una que falte. Ya cubierta del
+     * todo, cada unidad de más descuenta un tramo fijo al tiempo. Un piso
+     * configurado evita que se resuelva al instante en cualquiera de los
+     * dos casos.
      */
     public function calcularTiempoResolucionSegundos(): int
     {
-        $tipoVehiculoIdsSolicitados = $this->tipoMision->requisitos->pluck('tipo_vehiculo_id');
         $totalRequerido = $this->tipoMision->requisitos->sum('cantidad');
+        $totalPresentes = $this->totalPresentesSolicitados();
 
-        $totalPresentesSolicitados = $this->vehiculosPresentes()
-            ->whereIn('tipo_vehiculo_id', $tipoVehiculoIdsSolicitados)
-            ->count();
+        $faltantes = max(0, $totalRequerido - $totalPresentes);
+        $extras = max(0, $totalPresentes - $totalRequerido);
 
-        $unidadesExtra = max(0, $totalPresentesSolicitados - $totalRequerido);
-
-        $segundos = config('juego.tiempo_resolucion_base_segundos')
-            - ($unidadesExtra * config('juego.descuento_tiempo_resolucion_por_unidad_segundos'));
+        $segundos = $faltantes > 0
+            ? config('juego.tiempo_resolucion_base_segundos') + ($faltantes * config('juego.tiempo_extra_por_unidad_faltante_segundos'))
+            : config('juego.tiempo_resolucion_base_segundos') - ($extras * config('juego.descuento_tiempo_resolucion_por_unidad_segundos'));
 
         return max(config('juego.tiempo_resolucion_minimo_segundos'), $segundos);
+    }
+
+    /**
+     * Nuevo `resuelve_en` tras la llegada de una unidad solicitada (RF-24).
+     * Si esta llegada recién termina de cubrir los requisitos (antes
+     * faltaba alguna unidad, ahora no falta ninguna), recorta el tiempo que
+     * quedaba en `juego.descuento_al_completar_cobertura` en vez de
+     * recalcularlo desde cero. En cualquier otro caso —primera llegada,
+     * sigue faltando alguna, o ya estaba cubierta y esta es una unidad de
+     * más— usa calcularTiempoResolucionSegundos().
+     */
+    public function calcularResuelveEnTrasLlegada(bool $cubiertaAntes): Carbon
+    {
+        if (! $cubiertaAntes && $this->requisitosCubiertos() && $this->resuelve_en) {
+            $segundosRestantes = max(0, $this->resuelve_en->getTimestamp() - now()->getTimestamp());
+            $segundosRecortados = (int) round($segundosRestantes * (1 - config('juego.descuento_al_completar_cobertura')));
+
+            return now()->addSeconds(max(config('juego.tiempo_resolucion_minimo_segundos'), $segundosRecortados));
+        }
+
+        return now()->addSeconds(FactorVelocidadJuego::escalarSegundos($this->calcularTiempoResolucionSegundos()));
     }
 
     /**

@@ -67,14 +67,25 @@ return [
     'recompensa_mision_maxima' => (int) env('JUEGO_RECOMPENSA_MISION_MAXIMA', 500),
 
     /*
-    | Tiempo de resolución (RF-24): apenas una misión cubre sus requisitos
-    | por primera vez, arranca este cronómetro fijo de 3 minutos para
-    | todas las misiones por igual. Cada unidad de más que llega, del tipo
-    | que la misión pide, descuenta un tramo fijo de segundos al tiempo que
-    | falta, hasta un piso mínimo para que nunca se resuelva al instante.
-    | Ver Mision::calcularTiempoResolucionSegundos().
+    | Tiempo de resolución (RF-24): apenas llega la primera unidad de un
+    | tipo que la misión pide —cubra o no todos sus requisitos todavía—
+    | arranca este cronómetro fijo de 3 minutos para todas las misiones
+    | por igual.
+    |
+    | Mientras siga faltando alguna unidad solicitada, se suma este extra
+    | por cada una que falte (p. ej. una misión que pide 2 y solo tiene 1
+    | presente arranca con 3 min + 1 min = 4 min). Una vez que llegan las
+    | que faltaban y la misión queda totalmente cubierta por primera vez,
+    | en vez de recalcular desde cero se recorta el tiempo que quedaba en
+    | este porcentaje. Ya cubierta, cada unidad de más que llegue después
+    | descuenta un tramo fijo de segundos al tiempo que falta. Un piso
+    | mínimo evita que se resuelva al instante en cualquiera de los casos.
+    | Ver Mision::calcularTiempoResolucionSegundos() y
+    | Mision::calcularResuelveEnTrasLlegada().
     */
     'tiempo_resolucion_base_segundos' => (int) env('JUEGO_TIEMPO_RESOLUCION_BASE_SEGUNDOS', 180),
+    'tiempo_extra_por_unidad_faltante_segundos' => (int) env('JUEGO_TIEMPO_EXTRA_POR_UNIDAD_FALTANTE_SEGUNDOS', 60),
+    'descuento_al_completar_cobertura' => (float) env('JUEGO_DESCUENTO_AL_COMPLETAR_COBERTURA', 0.3),
     'descuento_tiempo_resolucion_por_unidad_segundos' => (int) env('JUEGO_DESCUENTO_TIEMPO_RESOLUCION_POR_UNIDAD_SEGUNDOS', 20),
     'tiempo_resolucion_minimo_segundos' => (int) env('JUEGO_TIEMPO_RESOLUCION_MINIMO_SEGUNDOS', 30),
 

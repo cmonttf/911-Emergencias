@@ -214,14 +214,21 @@ están agrupadas bajo `# --- Central de Emergencias Chile ---`:
   `Mision::calcularRecompensaCreditos()` paga más cerca del máximo mientras
   menos del tiempo límite se haya usado al completarla.
 - `JUEGO_TIEMPO_RESOLUCION_BASE_SEGUNDOS` (por defecto 180, es decir 3
-  minutos): cronómetro fijo que arranca apenas una misión cubre sus
-  requisitos por primera vez, igual para toda misión sin importar su tipo.
+  minutos): cronómetro fijo que arranca apenas llega la primera unidad de
+  un tipo que la misión pide, cubra o no todos sus requisitos todavía
+  (p. ej. una misión que pide 2 unidades y solo tiene 1 presente ya está
+  "en atención"). `JUEGO_TIEMPO_EXTRA_POR_UNIDAD_FALTANTE_SEGUNDOS` (por
+  defecto 60): mientras siga faltando alguna unidad solicitada, se suma
+  este extra por cada una que falte. `JUEGO_DESCUENTO_AL_COMPLETAR_COBERTURA`
+  (por defecto 0.3): en vez de recalcular desde cero, al llegar las
+  unidades que faltaban y quedar la misión totalmente cubierta por primera
+  vez, se recorta en este porcentaje el tiempo que quedaba.
   `JUEGO_DESCUENTO_TIEMPO_RESOLUCION_POR_UNIDAD_SEGUNDOS` (por defecto 20):
-  cada unidad de más que llega, de uno de los tipos de vehículo que la
-  misión pide, descuenta este tiempo al que falta.
-  `JUEGO_TIEMPO_RESOLUCION_MINIMO_SEGUNDOS` (por defecto 30): piso para que
-  mandar muchas unidades de más no la resuelva al instante. Ver
-  `Mision::calcularTiempoResolucionSegundos()`.
+  ya cubierta del todo, cada unidad de más que llegue después descuenta
+  este tiempo fijo al que falta. `JUEGO_TIEMPO_RESOLUCION_MINIMO_SEGUNDOS`
+  (por defecto 30): piso para que ninguno de los casos anteriores la
+  resuelva al instante. Ver `Mision::calcularTiempoResolucionSegundos()` y
+  `Mision::calcularResuelveEnTrasLlegada()`.
 - `JUEGO_ESTACIONAMIENTOS_MAXIMOS`, `JUEGO_COSTO_AMPLIACION_ESTACIONAMIENTO`
   (por defecto 15 y 1000): cada edificio puede ampliar sus propios
   estacionamientos de a 1 por vez (botón "Ampliar estacionamientos" en el

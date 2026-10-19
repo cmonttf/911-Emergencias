@@ -8,22 +8,22 @@ use App\Dominio\Flota\Models\Vehiculo;
 use App\Dominio\Misiones\Enums\EstadoMision;
 use App\Dominio\Misiones\Models\Despacho;
 use App\Dominio\Misiones\Models\Mision;
-use App\Dominio\Misiones\Support\FactorVelocidadJuego;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Procesa la llegada de una unidad despachada a una misión: la pasa a "en el
- * lugar" y, si con ella ya se cubren los requisitos, pasa la misión a
- * "en atención" y agenda su resolución. Valida el estado esperado antes de
- * actuar para ser idempotente.
+ * lugar" y, si es de un tipo que la misión pide, pasa la misión a
+ * "en atención" y agenda (o reprograma) su resolución. Valida el estado
+ * esperado antes de actuar para ser idempotente.
  *
- * Si la misión ya estaba "en atención" (porque llegaron antes las unidades
- * mínimas) y esta es una unidad de más, se recalcula el tiempo de
- * resolución (Mision::calcularTiempoResolucionSegundos()) y se reprograma
- * solo si queda antes que lo ya agendado: mandar más unidades adelanta el
- * término, nunca lo atrasa.
+ * La misión entra en atención con la primera unidad solicitada que llega,
+ * cubra o no todos sus requisitos todavía (RF-24): Mision::calcularResuelveEnTrasLlegada()
+ * decide el tiempo según el caso (primera llegada parcial, llegada que
+ * recién completa la cobertura, o unidad de más ya estando cubierta). Solo
+ * se reprograma si el resultado adelanta lo ya agendado: mandar o recibir
+ * más unidades nunca atrasa el término.
  */
 class ProcesarLlegadaVehiculoJob implements ShouldQueue
 {
@@ -46,23 +46,26 @@ class ProcesarLlegadaVehiculoJob implements ShouldQueue
                 return;
             }
 
+            $mision = Mision::query()->whereKey($despacho->mision_id)->lockForUpdate()->first();
+            $cubiertaAntes = $mision?->requisitosCubiertos() ?? false;
+
             $vehiculo->update(['estado' => EstadoVehiculo::EnElLugar]);
             VehiculoLlego::dispatch($vehiculo);
 
-            $mision = Mision::query()->whereKey($despacho->mision_id)->lockForUpdate()->first();
-
             $yaEnAtencion = $mision?->estado === EstadoMision::EnAtencion;
 
-            if (! $mision || (! $yaEnAtencion && $mision->estado !== EstadoMision::Generada) || ! $mision->requisitosCubiertos()) {
+            if (! $mision || (! $yaEnAtencion && $mision->estado !== EstadoMision::Generada)) {
                 return;
             }
 
-            $resuelveEn = now()->addSeconds(
-                FactorVelocidadJuego::escalarSegundos($mision->calcularTiempoResolucionSegundos())
-            );
+            if (! $mision->tieneAlgunaUnidadSolicitadaPresente()) {
+                // Esta unidad no es de un tipo que la misión pida.
+                return;
+            }
+
+            $resuelveEn = $mision->calcularResuelveEnTrasLlegada($cubiertaAntes);
 
             if ($yaEnAtencion && $mision->resuelve_en && $resuelveEn->greaterThanOrEqualTo($mision->resuelve_en)) {
-                // Esta unidad de más no adelanta el término ya agendado.
                 return;
             }
 
