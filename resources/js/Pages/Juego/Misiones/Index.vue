@@ -28,6 +28,10 @@ useCanalJugador({
     'mision.generada': refrescarListado,
     'mision.completada': refrescarListado,
     'mision.fallida': refrescarListado,
+    // Sin este, el listado nunca se enteraba de que una misión pasó a "en
+    // atención" (eso lo dispara la llegada de una unidad, no un evento de
+    // la propia misión) y se quedaba pegado en "Generada".
+    'vehiculo.llego': refrescarListado,
 });
 </script>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     estado: {
@@ -38,18 +38,40 @@ const COLOR_POR_ESTADO = {
     fallida: 'bg-red-500',
 };
 
+const ESTADOS_TERMINALES = ['completada', 'fallida'];
+
+const esTerminal = computed(() => ESTADOS_TERMINALES.includes(props.estado));
+
 const ahora = ref(Date.now());
 let intervalo = null;
 
-onMounted(() => {
-    intervalo = setInterval(() => {
-        ahora.value = Date.now();
-    }, 1000);
-});
+function detenerCronometro() {
+    if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+    }
+}
 
-onBeforeUnmount(() => {
-    clearInterval(intervalo);
-});
+// Una misión completada o fallida ya no avanza: el cronómetro deja de
+// correr (y la plantilla deja de mostrarlo) en vez de seguir contando
+// tiempo que no significa nada.
+function iniciarCronometroSiCorresponde() {
+    if (esTerminal.value) {
+        detenerCronometro();
+
+        return;
+    }
+
+    if (!intervalo) {
+        intervalo = setInterval(() => {
+            ahora.value = Date.now();
+        }, 1000);
+    }
+}
+
+onMounted(iniciarCronometroSiCorresponde);
+onBeforeUnmount(detenerCronometro);
+watch(() => props.estado, iniciarCronometroSiCorresponde);
 
 function formatearDuracion(segundos) {
     const totalSegundos = Math.max(0, Math.round(segundos));
@@ -59,8 +81,7 @@ function formatearDuracion(segundos) {
     return `${minutos}:${segs}`;
 }
 
-// Cronómetro: tiempo transcurrido desde que se generó la emergencia, nunca
-// deja de correr aunque ya esté completada o fallida.
+// Cronómetro: tiempo transcurrido desde que se generó la emergencia.
 const segundosTranscurridos = computed(() => (ahora.value - new Date(props.creadaEn).getTime()) / 1000);
 
 // Tramo vigente para la línea de progreso: hacia el vencimiento mientras
@@ -113,7 +134,7 @@ const colorBarra = computed(() => COLOR_POR_ESTADO[props.estado] ?? 'bg-gray-400
 
 <template>
     <div>
-        <div class="flex items-center justify-between text-xs text-gray-500">
+        <div v-if="!esTerminal" class="flex items-center justify-between text-xs text-gray-500">
             <span>Cronómetro: {{ formatearDuracion(segundosTranscurridos) }}</span>
             <span v-if="tramo">{{ tramo.etiqueta }} {{ formatearDuracion(segundosRestantes) }}</span>
         </div>
