@@ -103,8 +103,20 @@ function dibujarMisiones() {
 }
 
 /**
+ * Posición actual de un vehículo en movimiento según la hora (RNF-02).
+ */
+function posicionVehiculo(datos) {
+    const fraccion = fraccionDeTiempo(datos.salidaEn, datos.llegadaEn);
+
+    return puntoEnFraccion(datos.geometria, fraccion);
+}
+
+/**
  * Crea o actualiza un marcador por vehículo en movimiento. La posición se
  * recalcula en cada cuadro de animación, nunca se pide al servidor (RNF-02).
+ * Se fija una posición inicial al crear el marcador (en vez de esperar al
+ * primer cuadro de animación) para que nunca se vea en el origen por
+ * defecto de MapLibre mientras no se haya dibujado ningún cuadro.
  */
 function sincronizarMarcadoresVehiculo() {
     const idsVigentes = new Set(props.vehiculosEnMovimiento.map((vehiculo) => vehiculo.id));
@@ -124,6 +136,7 @@ function sincronizarMarcadoresVehiculo() {
         }
 
         const marcador = new Marker({ color: '#0ea5e9' })
+            .setLngLat(posicionVehiculo(vehiculo))
             .setPopup(new Popup().setText(vehiculo.tipoVehiculo))
             .addTo(mapa);
 
@@ -131,11 +144,20 @@ function sincronizarMarcadoresVehiculo() {
     });
 }
 
+/**
+ * Si el cálculo de un vehículo fallara (p. ej. datos incompletos a mitad de
+ * una actualización), no debe detener el cuadro de animación de los demás
+ * ni el propio bucle: sin este try/catch, un solo error deja a todos los
+ * vehículos congelados para siempre, porque nunca se volvería a agendar el
+ * siguiente `requestAnimationFrame`.
+ */
 function animar() {
-    for (const { marcador, datos } of marcadoresVehiculo.values()) {
-        const fraccion = fraccionDeTiempo(datos.salidaEn, datos.llegadaEn);
-        const [lng, lat] = puntoEnFraccion(datos.geometria, fraccion);
-        marcador.setLngLat([lng, lat]);
+    for (const [id, { marcador, datos }] of marcadoresVehiculo) {
+        try {
+            marcador.setLngLat(posicionVehiculo(datos));
+        } catch (error) {
+            console.error(`No se pudo calcular la posición del vehículo ${id}.`, error);
+        }
     }
 
     cuadroAnimacion = requestAnimationFrame(animar);
