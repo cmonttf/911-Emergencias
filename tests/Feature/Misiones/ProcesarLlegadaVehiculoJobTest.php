@@ -73,6 +73,40 @@ test('is idempotent when run twice', function () {
     Queue::assertPushed(ResolverMisionJob::class, 1);
 });
 
+test('an extra unit arriving after requirements are already met speeds up resolution', function () {
+    config(['juego.factor_maximo_reduccion_tiempo_resolucion' => 3]);
+
+    $jugador = User::factory()->create();
+    $edificio = Edificio::factory()->for($jugador, 'jugador')->create();
+    $vehiculo1 = Vehiculo::factory()->for($edificio)->create(['estado' => EstadoVehiculo::EnRuta]);
+    $tipoMision = TipoMision::factory()->create(['tiempo_resolucion_segundos' => 300]);
+    RequisitoTipoMision::factory()->for($tipoMision)->create([
+        'tipo_vehiculo_id' => $vehiculo1->tipo_vehiculo_id,
+        'cantidad' => 1,
+    ]);
+    $mision = Mision::factory()->for($jugador, 'jugador')->for($tipoMision)->create(['estado' => EstadoMision::Generada]);
+    $vehiculo1->update(['mision_id' => $mision->id]);
+
+    $despacho1 = Despacho::factory()->for($mision)->for($vehiculo1)->create();
+
+    (new ProcesarLlegadaVehiculoJob($despacho1->id))->handle();
+
+    $mision->refresh();
+    expect($mision->estado)->toBe(EstadoMision::EnAtencion);
+    $primerResuelveEn = $mision->resuelve_en;
+
+    // Una segunda unidad que ya no era necesaria para cubrir el requisito.
+    $vehiculo2 = Vehiculo::factory()->for($edificio)->create(['estado' => EstadoVehiculo::EnRuta, 'mision_id' => $mision->id]);
+    $despacho2 = Despacho::factory()->for($mision)->for($vehiculo2)->create();
+
+    (new ProcesarLlegadaVehiculoJob($despacho2->id))->handle();
+
+    $mision->refresh();
+    expect($mision->resuelve_en->lessThan($primerResuelveEn))->toBeTrue();
+
+    Queue::assertPushed(ResolverMisionJob::class, 2);
+});
+
 test('does nothing when the dispatch was already cancelled', function () {
     $despacho = despachoEnRutaConRequisito();
     $despacho->update(['cancelado_en' => now()]);

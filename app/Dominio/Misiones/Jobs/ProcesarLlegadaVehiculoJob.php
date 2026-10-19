@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\DB;
  * lugar" y, si con ella ya se cubren los requisitos, pasa la misión a
  * "en atención" y agenda su resolución. Valida el estado esperado antes de
  * actuar para ser idempotente.
+ *
+ * Si la misión ya estaba "en atención" (porque llegaron antes las unidades
+ * mínimas) y esta es una unidad de más, se recalcula el tiempo de
+ * resolución (Mision::calcularTiempoResolucionSegundos()) y se reprograma
+ * solo si queda antes que lo ya agendado: mandar más unidades adelanta el
+ * término, nunca lo atrasa.
  */
 class ProcesarLlegadaVehiculoJob implements ShouldQueue
 {
@@ -45,15 +51,24 @@ class ProcesarLlegadaVehiculoJob implements ShouldQueue
 
             $mision = Mision::query()->whereKey($despacho->mision_id)->lockForUpdate()->first();
 
-            if ($mision && $mision->estado === EstadoMision::Generada && $mision->requisitosCubiertos()) {
-                $resuelveEn = now()->addSeconds(
-                    FactorVelocidadJuego::escalarSegundos($mision->tipoMision->tiempo_resolucion_segundos)
-                );
+            $yaEnAtencion = $mision?->estado === EstadoMision::EnAtencion;
 
-                $mision->update(['estado' => EstadoMision::EnAtencion, 'resuelve_en' => $resuelveEn]);
-
-                ResolverMisionJob::dispatch($mision->id)->delay($resuelveEn);
+            if (! $mision || (! $yaEnAtencion && $mision->estado !== EstadoMision::Generada) || ! $mision->requisitosCubiertos()) {
+                return;
             }
+
+            $resuelveEn = now()->addSeconds(
+                FactorVelocidadJuego::escalarSegundos($mision->calcularTiempoResolucionSegundos())
+            );
+
+            if ($yaEnAtencion && $mision->resuelve_en && $resuelveEn->greaterThanOrEqualTo($mision->resuelve_en)) {
+                // Esta unidad de más no adelanta el término ya agendado.
+                return;
+            }
+
+            $mision->update(['estado' => EstadoMision::EnAtencion, 'resuelve_en' => $resuelveEn]);
+
+            ResolverMisionJob::dispatch($mision->id)->delay($resuelveEn);
         });
     }
 }

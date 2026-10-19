@@ -207,6 +207,22 @@ están agrupadas bajo `# --- Central de Emergencias Chile ---`:
   número de edificios hacia arriba también puede recibir misiones que
   exigen un vehículo de especialidad (rescate, escala, materiales
   peligrosos o mando, como un carro de mando).
+- `JUEGO_RECOMPENSA_MISION_MINIMA`, `JUEGO_RECOMPENSA_MISION_MAXIMA` (por
+  defecto 250 y 500): ningún tipo de misión paga créditos fuera de este
+  rango. Dentro de él, cada tipo tiene su propio sub-rango según su
+  severidad (`creditos_min`/`creditos_max` en `tipos_mision`), y
+  `Mision::calcularRecompensaCreditos()` paga más cerca del máximo mientras
+  menos del tiempo límite se haya usado al completarla.
+- `JUEGO_FACTOR_MAXIMO_REDUCCION_TIEMPO_RESOLUCION` (por defecto 3): mandar
+  más unidades de las que exige una misión adelanta su resolución (el
+  doble de unidades requeridas la resuelve en la mitad de tiempo, el
+  triple en un tercio...), hasta este factor máximo para que no se vuelva
+  instantánea.
+- `JUEGO_ESTACIONAMIENTOS_MAXIMOS`, `JUEGO_COSTO_AMPLIACION_ESTACIONAMIENTO`
+  (por defecto 15 y 1000): cada edificio puede ampliar sus propios
+  estacionamientos de a 1 por vez (botón "Ampliar estacionamientos" en el
+  mapa), además de los base de su tipo (2 para el Cuartel de Bomberos),
+  hasta este tope.
 
 ## Comando de importación de puntos de interés
 
